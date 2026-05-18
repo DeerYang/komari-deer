@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useEarthGlobeOpen } from "@/components/earth/earthGlobeOpenState";
 
 interface CurrentTimeCardProps {
   className?: string;
@@ -12,16 +13,19 @@ interface CurrentTimeCardProps {
  * Prevents hydration mismatch by only rendering after mount.
  */
 export function CurrentTimeCard({ className }: CurrentTimeCardProps) {
+  const isEarthGlobeOpen = useEarthGlobeOpen();
   const [time, setTime] = useState<string>("");
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
+    if (isEarthGlobeOpen) return undefined;
+
     const updateTime = () => setTime(new Date().toLocaleTimeString());
     updateTime();
     const interval = setInterval(updateTime, 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [isEarthGlobeOpen]);
 
   if (!mounted) {
     return <Skeleton className="h-6 w-24" />;

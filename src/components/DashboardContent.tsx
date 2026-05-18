@@ -1,6 +1,6 @@
 "use client";
 
-import React, { Suspense, useEffect } from "react";
+import React, { Suspense, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Clock, Globe, Activity, ArrowUpRight, Zap } from "lucide-react";
 
@@ -17,6 +17,20 @@ import { CurrentTimeCard } from "@/components/CurrentTimeCard";
 import { Callouts } from "@/components/DashboardCallouts";
 import { NodeMapView } from "@/components/NodeMapView";
 import { useStatusCardsVisibility } from "@/hooks/useStatusCardsVisibility";
+import { useEarthGlobeOpen } from "@/components/earth/earthGlobeOpenState";
+
+const MemoNodeMapView = React.memo(NodeMapView);
+const MemoNodeDisplay = React.memo(NodeDisplay);
+
+function useStableValueWhile<T>(paused: boolean, value: T) {
+  const stableValueRef = useRef(value);
+
+  if (!paused) {
+    stableValueRef.current = value;
+  }
+
+  return paused ? stableValueRef.current : value;
+}
 
 // Intelligent speed formatting function
 const formatSpeed = (bytes: number): string => {
@@ -117,6 +131,7 @@ const renderSpeedStatusValue = ({
 
 export default function DashboardContent() {
   const [t] = useTranslation();
+  const isEarthGlobeOpen = useEarthGlobeOpen();
   const { live_data } = useLiveData();
   const { publicInfo } = usePublicInfo();
   const { themeConfig } = useTheme();
@@ -130,6 +145,8 @@ export default function DashboardContent() {
   
   //#region 节点数据
   const { nodeList, isLoading, error, refresh } = useNodeList();
+  const displayedLiveData = useStableValueWhile(isEarthGlobeOpen, live_data);
+  const displayedNodeList = useStableValueWhile(isEarthGlobeOpen, nodeList);
 
   const renderTrafficPair = (up: string, down: string) => {
     if (themeConfig.cardLayout === "modern") {
@@ -166,7 +183,7 @@ export default function DashboardContent() {
       title: t("current_online"),
       icon: <Activity className="h-4 w-4 text-muted-foreground" />,
       getValue: () =>
-        `${live_data?.data?.online.length ?? 0} / ${nodeList?.length ?? 0}`,
+        `${displayedLiveData?.data?.online.length ?? 0} / ${displayedNodeList?.length ?? 0}`,
       visible: statusCardsVisibility.currentOnline,
     },
     {
@@ -174,10 +191,10 @@ export default function DashboardContent() {
       title: t("region_overview"),
       icon: <Globe className="h-4 w-4 text-muted-foreground" />,
       getValue: () =>
-        nodeList
+        displayedNodeList
           ? Object.entries(
-              nodeList.reduce((acc, item) => {
-                if (live_data?.data.online.includes(item.uuid)) {
+              displayedNodeList.reduce((acc, item) => {
+                if (displayedLiveData?.data.online.includes(item.uuid)) {
                   acc[item.region] = (acc[item.region] || 0) + 1;
                 }
                 return acc;
@@ -191,8 +208,8 @@ export default function DashboardContent() {
       title: t("traffic_overview"),
       icon: <ArrowUpRight className="h-4 w-4 text-muted-foreground" />,
       renderValue: () => {
-        const data = live_data?.data?.data;
-        const online = live_data?.data?.online;
+        const data = displayedLiveData?.data?.data;
+        const online = displayedLiveData?.data?.online;
         if (!data || !online) return renderTrafficPair("0 B", "0 B");
         const onlineSet = new Set(online);
         const values = Object.entries(data)
@@ -216,8 +233,8 @@ export default function DashboardContent() {
       icon: <Zap className="h-4 w-4 text-muted-foreground" />,
       structuredValue: themeConfig.statusDesign === "speed",
       renderValue: () => {
-        const data = live_data?.data?.data;
-        const online = live_data?.data?.online;
+        const data = displayedLiveData?.data?.data;
+        const online = displayedLiveData?.data?.online;
         if (!data || !online) {
           return themeConfig.statusDesign === "speed"
             ? renderSpeedStatusValue({ up: 0, down: 0 })
@@ -246,11 +263,13 @@ export default function DashboardContent() {
   ];
 
   useEffect(() => {
+    if (isEarthGlobeOpen) return undefined;
+
     const interval = setInterval(() => {
       refresh();
     }, 5000);
     return () => clearInterval(interval);
-  }, [nodeList, refresh]);
+  }, [isEarthGlobeOpen, refresh]);
 
   if (isLoading) {
     return <Loading />;
@@ -291,18 +310,18 @@ export default function DashboardContent() {
         </div>
 
         {statusCardsVisibility.mapView && (
-          <NodeMapView
-            nodes={nodeList ?? []}
-            liveData={live_data?.data ?? { online: [], data: {} }}
+          <MemoNodeMapView
+            nodes={displayedNodeList ?? []}
+            liveData={displayedLiveData?.data ?? { online: [], data: {} }}
             mapOnly
           />
         )}
       </div>
 
       <Suspense fallback={<div className="p-4">{t("nodes.loading", { defaultValue: "Loading nodes..." })}</div>}>
-        <NodeDisplay
-          nodes={nodeList ?? []}
-          liveData={live_data?.data ?? { online: [], data: {} }}
+        <MemoNodeDisplay
+          nodes={displayedNodeList ?? []}
+          liveData={displayedLiveData?.data ?? { online: [], data: {} }}
         />
       </Suspense>
     </div>

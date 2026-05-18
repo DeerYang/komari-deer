@@ -3,6 +3,10 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import type { LiveDataResponse } from "../types/LiveData";
 import { useRPC2Call } from "./RPC2Context";
+import {
+  EARTH_GLOBE_OPEN_EVENT,
+  getEarthGlobeOpenState,
+} from "@/components/earth/earthGlobeOpenState";
 
 // 创建Context
 interface LiveDataContextType {
@@ -41,15 +45,50 @@ export const LiveDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     
     let timer: number | undefined;
     let stopped = false;
+    let paused = getEarthGlobeOpenState();
     let running = false; // 防抖：避免并发请求
     const intervalMs = 2000;
 
+    const clearTimer = () => {
+      if (timer) {
+        window.clearTimeout(timer);
+        timer = undefined;
+      }
+    };
+
+    const scheduleNext = (delay = intervalMs) => {
+      clearTimer();
+      if (!stopped && !paused) {
+        timer = window.setTimeout(fetchLatest, delay);
+      }
+    };
+
+    const handleEarthOpenChange = (event: Event) => {
+      paused =
+        event instanceof CustomEvent && typeof event.detail?.open === "boolean"
+          ? event.detail.open
+          : getEarthGlobeOpenState();
+
+      if (paused) {
+        clearTimer();
+        return;
+      }
+
+      if (!running) {
+        scheduleNext(0);
+      }
+    };
+
     const fetchLatest = async () => {
+      if (paused) return;
       if (running) return; // 如果上次请求还在，跳过
       running = true;
       try {
         // 策略由 RPC2Client 内部实现
         const result: Record<string, any> = await call("common:getNodesLatestStatus");
+
+        if (paused || stopped) return;
+
         // 将返回转换为 LiveDataResponse 结构
         const online = Object.values(result)
           .filter((v: any) => v?.online)
@@ -101,17 +140,17 @@ export const LiveDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setShowCallout(false);
       } finally {
         running = false;
-        if (!stopped) {
-          timer = window.setTimeout(fetchLatest, intervalMs);
-        }
+        scheduleNext();
       }
     };
 
-    fetchLatest();
+    window.addEventListener(EARTH_GLOBE_OPEN_EVENT, handleEarthOpenChange);
+    if (!paused) fetchLatest();
 
     return () => {
       stopped = true;
-      if (timer) window.clearTimeout(timer);
+      clearTimer();
+      window.removeEventListener(EARTH_GLOBE_OPEN_EVENT, handleEarthOpenChange);
     };
   }, [call]);
 
