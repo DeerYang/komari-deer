@@ -493,3 +493,482 @@ body, * {
     radial-gradient(at 40% 0%, oklch(0.5 0.2 350 / 0.12) 0px, transparent 50%),
     radial-gradient(at 60% 100%, oklch(0.5 0.2 10 / 0.12) 0px, transparent 50%);
 }
+
+.deer-earth-launcher {
+  position: fixed;
+  right: 30px;
+  bottom: 30px;
+  z-index: 1900;
+  width: 70px;
+  height: 70px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  background:
+    radial-gradient(circle at 50% 46%, rgba(0, 216, 255, 0.2), transparent 42%),
+    linear-gradient(145deg, rgba(255,255,255,0.15), rgba(255,255,255,0.05), rgba(0,0,0,0.1));
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+  box-shadow:
+    0 8px 32px rgba(31, 38, 135, 0.37),
+    0 4px 16px rgba(0, 0, 0, 0.3),
+    inset 0 2px 4px rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+  cursor: pointer;
+  transition:
+    transform 0.4s cubic-bezier(0.23, 1, 0.32, 1),
+    opacity 0.3s ease,
+    border-color 0.3s ease,
+    box-shadow 0.3s ease;
+}
+
+.deer-earth-launcher::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  z-index: -1;
+  border-radius: 22px;
+  background: linear-gradient(45deg, #00ffff, #0080ff, #2f6bff, #00d8ff, #18f5d2, #00ffff);
+  background-size: 400% 400%;
+  opacity: 0;
+  animation: deerEarthGradientBorder 3s ease infinite;
+  transition: opacity 0.4s ease;
+}
+
+.deer-earth-launcher:hover::before,
+.deer-earth-launcher:focus-visible::before {
+  opacity: 1;
+}
+
+.deer-earth-launcher:hover,
+.deer-earth-launcher:focus-visible {
+  transform: translateY(-5px) scale(1.05);
+  border-color: rgba(0, 255, 255, 0.5);
+  box-shadow:
+    0 15px 40px rgba(0, 255, 255, 0.4),
+    0 8px 20px rgba(31, 38, 135, 0.5);
+}
+
+.deer-earth-launcher.is-hidden {
+  transform: translateX(150px) scale(0);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.deer-earth-launcher-icon {
+  width: 40px;
+  height: 40px;
+  filter: drop-shadow(0 2px 8px rgba(0, 255, 255, 0.5));
+  animation: deerEarthFloatIcon 3s ease-in-out infinite;
+}
+
+.deer-earth-particle-container {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.deer-earth-particle {
+  position: absolute;
+  left: calc(var(--x, 0.5) * 100%);
+  top: calc(var(--y, 0.5) * 100%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #00ffff;
+  opacity: 0;
+  box-shadow: 0 0 6px #00ffff;
+}
+
+.deer-earth-launcher:hover .deer-earth-particle,
+.deer-earth-launcher:focus-visible .deer-earth-particle {
+  animation: deerEarthParticleFloat 1.5s ease-out infinite;
+}
+
+.deer-earth-particle:nth-child(1) { animation-delay: 0s; }
+.deer-earth-particle:nth-child(2) { animation-delay: 0.2s; }
+.deer-earth-particle:nth-child(3) { animation-delay: 0.4s; }
+.deer-earth-particle:nth-child(4) { animation-delay: 0.6s; }
+.deer-earth-particle:nth-child(5) { animation-delay: 0.1s; }
+.deer-earth-particle:nth-child(6) { animation-delay: 0.3s; }
+
+.deer-earth-ripple-ring,
+.deer-earth-pulse-ring {
+  position: absolute;
+  inset: 0;
+  border: 2px solid rgba(0, 255, 255, 0.35);
+  border-radius: 20px;
+  pointer-events: none;
+}
+
+.deer-earth-pulse-ring {
+  animation: deerEarthPulseRing 2s ease-out infinite;
+}
+
+.deer-earth-ripple-ring {
+  opacity: 0;
+}
+
+.deer-earth-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.45);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  animation: deerEarthOverlayIn 0.3s ease-out forwards;
+}
+
+.deer-earth-modal-overlay.is-closing {
+  animation: deerEarthOverlayOut 0.25s ease-in forwards;
+}
+
+.deer-earth-modal-content {
+  position: relative;
+  width: min(80vw, 1400px);
+  height: min(80vh, 900px);
+  overflow: hidden;
+  border: 1px solid color-mix(in oklab, var(--border) 70%, #00d8ff 30%);
+  border-radius: 16px;
+  background:
+    linear-gradient(135deg, rgba(0, 22, 44, 0.42), rgba(0, 0, 0, 0.2)),
+    color-mix(in oklab, var(--card) 72%, transparent);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  box-shadow:
+    0 30px 90px rgba(0, 0, 0, 0.46),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  animation: deerEarthModalIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.deer-earth-modal-content.is-closing {
+  animation: deerEarthModalOut 0.25s ease-in forwards;
+}
+
+.deer-earth-render-area {
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+.deer-earth-render-area.is-ready {
+  opacity: 1;
+}
+
+.deer-earth-stage,
+.deer-earth-canvas {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  cursor: grab;
+  touch-action: none;
+}
+
+.deer-earth-stage:active,
+.deer-earth-canvas:active {
+  cursor: grabbing;
+}
+
+.deer-earth-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted-foreground);
+  font-size: 0.9rem;
+}
+
+.deer-earth-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 4;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(0, 12, 24, 0.42);
+  color: rgba(255, 255, 255, 0.86);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+.deer-earth-counter {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  z-index: 4;
+  min-width: 112px;
+  padding: 12px 18px;
+  border: 1px solid rgba(0, 216, 255, 0.32);
+  border-radius: 12px;
+  background: rgba(0, 20, 40, 0.58);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
+  pointer-events: none;
+}
+
+.deer-earth-counter span {
+  display: block;
+  margin-bottom: 4px;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 0.72rem;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.deer-earth-counter strong {
+  display: block;
+  color: #00d8ff;
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.deer-earth-user-marker {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(0, 22, 44, 0.45);
+  box-shadow: 0 0 0 0 rgba(0, 216, 255, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  cursor: pointer;
+  transform: translate(-50%, -50%);
+  animation: deerEarthUserPulse 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+}
+
+.deer-earth-user-marker img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.deer-earth-user-marker.is-original {
+  width: auto;
+  border-radius: 8px;
+}
+
+.deer-earth-user-marker.is-original img {
+  width: auto;
+  height: 32px;
+  object-fit: contain;
+  border-radius: 0;
+}
+
+.deer-earth-flag-img {
+  width: 24px;
+  height: auto;
+  display: block;
+  cursor: pointer;
+  transform: translate(-50%, -50%);
+  transition:
+    transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    filter 0.3s ease;
+  filter: drop-shadow(0 0 4px #00d8ff);
+}
+
+.deer-earth-flag-img.status-online {
+  filter: drop-shadow(0 0 5px #21d7a7);
+}
+
+.deer-earth-flag-img.status-partial {
+  filter: drop-shadow(0 0 5px #f5aa26);
+}
+
+.deer-earth-flag-img.status-offline {
+  filter: drop-shadow(0 0 5px #ff4f78);
+}
+
+.deer-earth-tooltip {
+  position: absolute;
+  z-index: 9;
+  display: none;
+  min-width: 210px;
+  max-width: min(320px, calc(100vw - 48px));
+  padding: 12px 16px;
+  border: 1px solid rgba(0, 216, 255, 0.64);
+  border-radius: 10px;
+  background: rgba(0, 20, 40, 0.78);
+  color: rgba(255, 255, 255, 0.92);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.35);
+  pointer-events: auto;
+}
+
+.deer-earth-tooltip-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+  padding-bottom: 7px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  color: #00d8ff;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.deer-earth-tooltip-header span:last-child {
+  color: rgba(255, 255, 255, 0.56);
+  font-size: 0.76rem;
+  font-weight: 500;
+}
+
+.deer-earth-tooltip-content {
+  max-height: 210px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.deer-earth-tooltip-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 0;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.92rem;
+}
+
+.deer-earth-tooltip-item::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: #00d8ff;
+  box-shadow: 0 0 10px rgba(0, 216, 255, 0.72);
+}
+
+@keyframes deerEarthGradientBorder {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes deerEarthFloatIcon {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+@keyframes deerEarthParticleFloat {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc((var(--x, 0.5) - 0.5) * 60px), calc((var(--y, 0.5) - 0.5) * 60px)) scale(0);
+  }
+}
+
+@keyframes deerEarthPulseRing {
+  0% { transform: scale(1); opacity: 0.8; }
+  100% { transform: scale(1.5); opacity: 0; }
+}
+
+@keyframes deerEarthOverlayIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes deerEarthOverlayOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes deerEarthModalIn {
+  from { opacity: 0; transform: scale(0.92); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes deerEarthModalOut {
+  from { opacity: 1; transform: scale(1); }
+  to { opacity: 0; transform: scale(0.92); }
+}
+
+@keyframes deerEarthUserPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(0, 216, 255, 0.68);
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    box-shadow: 0 0 0 15px rgba(0, 216, 255, 0);
+    transform: translate(-50%, -50%) scale(1.15);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(0, 216, 255, 0);
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@media (max-width: 768px) {
+  .deer-earth-launcher {
+    right: 15px;
+    bottom: 20px;
+    width: 55px;
+    height: 55px;
+    border-radius: 16px;
+  }
+
+  .deer-earth-launcher::before {
+    border-radius: 18px;
+  }
+
+  .deer-earth-launcher-icon {
+    width: 30px;
+    height: 30px;
+  }
+
+  .deer-earth-modal-overlay {
+    padding: 12px;
+  }
+
+  .deer-earth-modal-content {
+    width: 95vw;
+    height: 75vh;
+    border-radius: 16px;
+  }
+
+  .deer-earth-counter {
+    top: 10px;
+    left: 10px;
+    min-width: 86px;
+    padding: 8px 12px;
+  }
+
+  .deer-earth-counter span {
+    font-size: 0.65rem;
+  }
+
+  .deer-earth-counter strong {
+    font-size: 1.5rem;
+  }
+
+  .deer-earth-close {
+    top: 10px;
+    right: 10px;
+  }
+
+  .deer-earth-user-marker {
+    width: 28px;
+    height: 28px;
+  }
+
+  .deer-earth-tooltip {
+    min-width: 0;
+    width: calc(100vw - 48px);
+  }
+}
