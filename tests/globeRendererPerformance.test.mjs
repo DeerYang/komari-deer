@@ -15,3 +15,21 @@ test("earth globe renderer uses purcarte-plus constructor initialization", () =>
   assert.equal(rendererSource.includes("new (Globe as any)"), true);
   assert.equal(rendererSource.includes("(Globe as any)()(canvas)"), false);
 });
+
+test("earth globe renderer uses static country polygons for glow outlines", () => {
+  assert.equal(rendererSource.includes("getEarthCountryPolygons"), true);
+  assert.equal(rendererSource.includes(".polygonsData(countryPolygons)"), true);
+  assert.equal(rendererSource.includes('.polygonCapColor(() => "rgba(0, 0, 0, 0)")'), true);
+  assert.equal(rendererSource.includes('.polygonSideColor(() => "rgba(0, 0, 0, 0)")'), true);
+  assert.equal(rendererSource.includes("fetch("), false);
+});
+
+test("earth globe country outlines use coarse local topology", () => {
+  const polygonSource = readFileSync(
+    new URL("../src/components/earth/earthCountryPolygons.ts", import.meta.url),
+    "utf8",
+  );
+
+  assert.equal(polygonSource.includes("world-countries-110m.json"), true);
+  assert.equal(polygonSource.includes("world-countries-50m.json"), false);
+});

@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import Globe from "globe.gl";
+import { getEarthCountryPolygons } from "./earthCountryPolygons";
 import type { EarthArcData, EarthPointData } from "./earthData";
 import { getEarthStructuralSignature, hasEarthStructuralChange } from "./globeDataSignature";
 
@@ -76,6 +77,15 @@ export default function GlobeRenderer({
   const themeColorRef = useRef(themeColor);
   const bgConfigRef = useRef(bgConfig);
   const dataSignatureRef = useRef("");
+  const countryPolygons = useMemo(
+    () =>
+      getEarthCountryPolygons(
+        pointsData
+          .filter((point) => point.type === "server")
+          .map((point) => point.code),
+      ),
+    [pointsData],
+  );
 
   const hideTooltip = useCallback(() => {
     const tooltip = tooltipRef.current;
@@ -256,6 +266,11 @@ export default function GlobeRenderer({
         wrapper.appendChild(img);
         return wrapper;
       })
+      .polygonsData(countryPolygons)
+      .polygonAltitude(0.006)
+      .polygonCapColor(() => "rgba(0, 0, 0, 0)")
+      .polygonSideColor(() => "rgba(0, 0, 0, 0)")
+      .polygonStrokeColor(() => "rgba(0, 255, 255, 0.92)")
       .ringsData(pointsData.filter((point) => point.type === "server"))
       .ringColor(() => themeColorRef.current)
       .ringMaxRadius(2)
@@ -332,11 +347,12 @@ export default function GlobeRenderer({
     }
 
     globe.htmlElementsData(pointsData);
+    globe.polygonsData(countryPolygons);
     globe.ringsData(pointsData.filter((point) => point.type === "server"));
     globe.arcsData(arcsData);
 
     dataSignatureRef.current = getEarthStructuralSignature(pointsData, arcsData);
-  }, [pointsData, arcsData, hideTooltip]);
+  }, [pointsData, arcsData, countryPolygons, hideTooltip]);
 
   useEffect(() => {
     const globe = globeRef.current;

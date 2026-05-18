@@ -156,7 +156,7 @@ export const DEFAULT_STATUS_CARDS_VISIBILITY: StatusCardsVisibility = {
 };
 
 export const DEFAULT_NODE_VIEW_MODE: NodeViewMode = "grid";
-export const DEFAULT_APPEARANCE: Appearance = "system";
+export const DEFAULT_APPEARANCE: Appearance = "dark";
 
 type AdminState = "loading" | "yes" | "no";
 
