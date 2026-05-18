@@ -1,15 +1,15 @@
 {
-  "name": "Komari Next",
-  "short": "next",
-  "description": "NextJS theme for Komari Monitor",
-  "version": "1.4.3",
-  "author": "tonyliuzj",
-  "url": "https://github.com/tonyliuzj/komari-next",
+  "name": "Komari Deer",
+  "short": "komari-deer",
+  "description": "Deer themed Komari Monitor dashboard",
+  "version": "0.0.1",
+  "author": "DeerYang",
+  "url": "https://github.com/DeerYang/komari-deer",
   "preview": "preview.png",
   "configuration": {
     "name": "Theme Settings",
     "icon": "Palette",
-    "description": "Komari Next theme defaults",
+    "description": "Komari Deer theme defaults",
     "managedFields": [
       {
         "key": "colorTheme",
