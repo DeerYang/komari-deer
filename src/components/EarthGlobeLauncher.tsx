@@ -22,8 +22,9 @@ const GlobeRenderer = dynamic(() => import("@/components/earth/GlobeRenderer"), 
 const DARK_GLOBE_IMAGE = "/assets/earth/earth-night.jpg";
 const LIGHT_GLOBE_IMAGE = "/assets/earth/earth-day.jpg";
 const BUMP_IMAGE = "/assets/earth/earth-topology.png";
+const MILKY_WAY_IMAGE = "/assets/earth/milky-way.jpg";
 const THEME_COLOR = "#00d8ff";
-const EARTH_TEXTURES = [DARK_GLOBE_IMAGE, LIGHT_GLOBE_IMAGE, BUMP_IMAGE] as const;
+const EARTH_TEXTURES = [DARK_GLOBE_IMAGE, LIGHT_GLOBE_IMAGE, BUMP_IMAGE, MILKY_WAY_IMAGE] as const;
 
 function preloadEarthTexture(src: string) {
   const img = new Image();
@@ -141,7 +142,7 @@ export default function EarthGlobeLauncher() {
   const bgConfig = useMemo(
     () => ({
       bg: "rgba(0, 0, 0, 0)",
-      bgImage: null,
+      bgImage: isDark ? MILKY_WAY_IMAGE : null,
       globeImage: isDark ? DARK_GLOBE_IMAGE : LIGHT_GLOBE_IMAGE,
       bumpImage: BUMP_IMAGE,
       atmosphere: THEME_COLOR,

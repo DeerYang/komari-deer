@@ -20,9 +20,11 @@ test("earth globe uses bundled local texture assets", () => {
   assert.equal(launcherSource.includes("upload.wikimedia.org"), false);
   assert.equal(launcherSource.includes("/assets/earth/earth-night.jpg"), true);
   assert.equal(launcherSource.includes("/assets/earth/earth-topology.png"), true);
+  assert.equal(launcherSource.includes("/assets/earth/milky-way.jpg"), true);
 });
 
 test("earth globe textures are warmed before the launcher is clicked", () => {
   assert.equal(launcherSource.includes("preloadEarthTexture"), true);
   assert.equal(launcherSource.includes(".decode()"), true);
+  assert.equal(launcherSource.includes("MILKY_WAY_IMAGE"), true);
 });
