@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import Globe from "globe.gl";
+import * as THREE from "three";
 import { getEarthCountryPolygons } from "./earthCountryPolygons";
 import type { EarthArcData, EarthPointData } from "./earthData";
 import { getEarthStructuralSignature, hasEarthStructuralChange } from "./globeDataSignature";
@@ -85,6 +86,25 @@ export default function GlobeRenderer({
           .map((point) => point.code),
       ),
     [pointsData],
+  );
+  const polygonFillMaterials = useMemo(
+    () => ({
+      country: new THREE.MeshBasicMaterial({
+        color: 0x00d8ff,
+        transparent: true,
+        opacity: 0.22,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+      }),
+      synthetic: new THREE.MeshBasicMaterial({
+        color: 0x00ffff,
+        transparent: true,
+        opacity: 0.28,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+      }),
+    }),
+    [],
   );
 
   const hideTooltip = useCallback(() => {
@@ -267,9 +287,10 @@ export default function GlobeRenderer({
         return wrapper;
       })
       .polygonsData(countryPolygons)
-      .polygonAltitude(0.006)
-      .polygonCapColor(() => "rgba(0, 0, 0, 0)")
-      .polygonSideColor(() => "rgba(0, 0, 0, 0)")
+      .polygonAltitude((polygon: { synthetic?: boolean }) => (polygon.synthetic ? 0.008 : 0.004))
+      .polygonCapMaterial((polygon: { synthetic?: boolean }) =>
+        polygon.synthetic ? polygonFillMaterials.synthetic : polygonFillMaterials.country
+      )
       .polygonStrokeColor(() => "rgba(0, 255, 255, 0.92)")
       .ringsData(pointsData.filter((point) => point.type === "server"))
       .ringColor(() => themeColorRef.current)
@@ -322,6 +343,8 @@ export default function GlobeRenderer({
       canvas.removeEventListener("click", handleCanvasClick);
       window.removeEventListener("resize", handleResize);
       resizeObserver?.disconnect();
+      polygonFillMaterials.country.dispose();
+      polygonFillMaterials.synthetic.dispose();
       globeRef.current = null;
     };
     // Globe owns DOM nodes, so this initializes once and later effects update data/config.

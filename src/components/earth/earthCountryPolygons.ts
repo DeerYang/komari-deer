@@ -150,6 +150,18 @@ type CountryFeature = {
   geometry?: unknown;
 };
 
+type Position = [number, number];
+type PolygonCoordinates = Position[][];
+type EarthPolygonGeometry =
+  | {
+      type: "Polygon";
+      coordinates: PolygonCoordinates;
+    }
+  | {
+      type: "MultiPolygon";
+      coordinates: PolygonCoordinates[];
+    };
+
 let featuresByIdCache: Map<string, CountryFeature> | null = null;
 const polygonResultCache = new Map<string, EarthCountryPolygon[]>();
 
@@ -176,6 +188,46 @@ function getCountryFeaturesById() {
   );
 
   return featuresByIdCache;
+}
+
+function getRingArea(ring: Position[]) {
+  let area = 0;
+
+  for (let i = 0, previous = ring.length - 1; i < ring.length; previous = i, i += 1) {
+    area += ring[previous][0] * ring[i][1] - ring[i][0] * ring[previous][1];
+  }
+
+  return area / 2;
+}
+
+function orientRing(ring: Position[], shouldBePositive: boolean) {
+  const isPositive = getRingArea(ring) > 0;
+  const nextRing = ring.map((position) => [position[0], position[1]] as Position);
+  return isPositive === shouldBePositive ? nextRing : nextRing.reverse();
+}
+
+function rewindPolygonCoordinates(coordinates: PolygonCoordinates) {
+  return coordinates.map((ring, index) => orientRing(ring, index !== 0));
+}
+
+function rewindGeometry(geometry: unknown): unknown {
+  const typedGeometry = geometry as EarthPolygonGeometry;
+
+  if (typedGeometry.type === "Polygon") {
+    return {
+      type: "Polygon",
+      coordinates: rewindPolygonCoordinates(typedGeometry.coordinates),
+    };
+  }
+
+  if (typedGeometry.type === "MultiPolygon") {
+    return {
+      type: "MultiPolygon",
+      coordinates: typedGeometry.coordinates.map(rewindPolygonCoordinates),
+    };
+  }
+
+  return geometry;
 }
 
 function createSmallRegionGeometry(code: string) {
@@ -221,7 +273,7 @@ export function getEarthCountryPolygons(codes: string[]): EarthCountryPolygon[] 
     if (country?.geometry) {
       polygons.push({
         code,
-        geometry: country.geometry,
+        geometry: rewindGeometry(country.geometry),
         id: country.id,
       });
       return;
@@ -232,7 +284,7 @@ export function getEarthCountryPolygons(codes: string[]): EarthCountryPolygon[] 
 
     polygons.push({
       code,
-      geometry: smallRegionGeometry,
+      geometry: rewindGeometry(smallRegionGeometry),
       id: `small-${code}`,
       synthetic: true,
     });

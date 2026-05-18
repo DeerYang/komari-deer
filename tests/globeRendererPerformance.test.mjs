@@ -19,8 +19,12 @@ test("earth globe renderer uses purcarte-plus constructor initialization", () =>
 test("earth globe renderer uses static country polygons for glow outlines", () => {
   assert.equal(rendererSource.includes("getEarthCountryPolygons"), true);
   assert.equal(rendererSource.includes(".polygonsData(countryPolygons)"), true);
-  assert.equal(rendererSource.includes('.polygonCapColor(() => "rgba(0, 0, 0, 0)")'), true);
-  assert.equal(rendererSource.includes('.polygonSideColor(() => "rgba(0, 0, 0, 0)")'), true);
+  assert.equal(rendererSource.includes("new THREE.MeshBasicMaterial"), true);
+  assert.equal(rendererSource.includes("transparent: true"), true);
+  assert.equal(rendererSource.includes(".polygonCapMaterial("), true);
+  assert.equal(rendererSource.includes(".polygonCapColor("), false);
+  assert.equal(rendererSource.includes(".polygonSideColor("), false);
+  assert.equal(rendererSource.includes(".polygonSideMaterial("), false);
   assert.equal(rendererSource.includes("fetch("), false);
 });
 
