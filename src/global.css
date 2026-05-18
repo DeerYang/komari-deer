@@ -494,6 +494,147 @@ body, * {
     radial-gradient(at 60% 100%, oklch(0.5 0.2 10 / 0.12) 0px, transparent 50%);
 }
 
+.deer-network-capsule {
+  position: fixed;
+  left: 50%;
+  bottom: max(30px, env(safe-area-inset-bottom));
+  z-index: 1850;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: min(92vw, 760px);
+  padding: 8px clamp(10px, 2vw, 20px);
+  border: 1px solid color-mix(in oklab, var(--border) 70%, transparent);
+  border-radius: 999px;
+  background:
+    linear-gradient(135deg, color-mix(in oklab, var(--card) 82%, var(--primary) 7%), color-mix(in oklab, var(--background) 62%, transparent));
+  color: var(--foreground);
+  -webkit-backdrop-filter: blur(24px) saturate(170%);
+  backdrop-filter: blur(24px) saturate(170%);
+  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.18);
+  font-size: clamp(11px, 2.5vw, 14px);
+  font-weight: 500;
+  line-height: 1.25;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateX(-50%) translateY(30px);
+  animation-name: deerNetworkCapsuleCycle;
+  animation-duration: var(--deer-network-cycle-time, 6500ms);
+  animation-timing-function: ease;
+  animation-delay: var(--deer-network-show-delay, 1500ms);
+  animation-fill-mode: both;
+  transition:
+    opacity 1.5s ease,
+    transform 1.5s cubic-bezier(0.2, 0.8, 0.2, 1),
+    visibility 1.5s,
+    background 0.3s ease,
+    border-color 0.3s ease,
+    color 0.3s ease;
+}
+
+.deer-network-capsule.is-active {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+
+.deer-network-capsule-icon {
+  width: 1.4em;
+  height: 1.4em;
+  flex: 0 0 auto;
+  color: var(--primary);
+}
+
+.deer-network-capsule-prefix {
+  color: var(--primary);
+  font-weight: 650;
+}
+
+.deer-network-capsule-divider {
+  display: inline-block;
+  width: 1px;
+  height: 12px;
+  margin: 0 6px;
+  background: color-mix(in oklab, var(--foreground) 18%, transparent);
+  vertical-align: -2px;
+}
+
+.deer-network-capsule-isp {
+  display: inline-block;
+  max-width: 40vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: bottom;
+}
+
+.deer-back-top {
+  position: fixed;
+  right: 118px;
+  bottom: max(45px, calc(env(safe-area-inset-bottom) + 45px));
+  z-index: 1850;
+  width: 40px;
+  height: 40px;
+  border: 1px solid color-mix(in oklab, var(--border) 74%, transparent);
+  border-radius: 999px;
+  background:
+    linear-gradient(135deg, color-mix(in oklab, var(--card) 84%, var(--primary) 8%), color-mix(in oklab, var(--background) 58%, transparent));
+  color: var(--foreground);
+  -webkit-backdrop-filter: blur(24px) saturate(170%);
+  backdrop-filter: blur(24px) saturate(170%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(10px) scale(0.9);
+  transition:
+    opacity 0.3s ease,
+    visibility 0.3s ease,
+    transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1),
+    background 0.3s ease,
+    border-color 0.3s ease;
+}
+
+.deer-back-top.is-visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0) scale(1);
+}
+
+.deer-back-top:hover,
+.deer-back-top:focus-visible {
+  border-color: color-mix(in oklab, var(--primary) 42%, var(--border));
+  background:
+    linear-gradient(135deg, color-mix(in oklab, var(--card) 88%, var(--primary) 12%), color-mix(in oklab, var(--background) 72%, transparent));
+  transform: translateY(-2px) scale(1);
+}
+
+.deer-back-top svg {
+  width: 20px;
+  height: 20px;
+}
+
+@keyframes deerNetworkCapsuleCycle {
+  0% {
+    opacity: 0;
+    visibility: hidden;
+    transform: translateX(-50%) translateY(30px);
+  }
+  16%, 78% {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(0);
+  }
+  100% {
+    opacity: 0;
+    visibility: hidden;
+    transform: translateX(-50%) translateY(30px);
+  }
+}
+
 .deer-earth-launcher {
   position: fixed;
   right: 30px;
@@ -915,6 +1056,23 @@ body, * {
 }
 
 @media (max-width: 768px) {
+  .deer-network-capsule {
+    max-width: min(92vw, 520px);
+  }
+
+  .deer-network-capsule-prefix {
+    display: none;
+  }
+
+  .deer-network-capsule-isp {
+    max-width: 34vw;
+  }
+
+  .deer-back-top {
+    right: 20px;
+    bottom: max(86px, calc(env(safe-area-inset-bottom) + 86px));
+  }
+
   .deer-earth-launcher {
     right: 15px;
     bottom: 20px;

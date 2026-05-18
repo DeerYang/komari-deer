@@ -12,6 +12,7 @@ import { OfflineIndicator } from "@/components/OfflineIndicator"
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt"
 import { PWAUpdatePrompt } from "@/components/PWAUpdatePrompt"
 import EarthGlobeLauncher from "@/components/EarthGlobeLauncher"
+import NetworkCapsuleBar from "@/components/NetworkCapsuleBar"
 import i18n, { detectClientLanguage } from "@/i18n/config"
 
 function I18nClientLanguageSync() {
@@ -44,6 +45,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
                 <OfflineIndicator />
                 <PWAInstallPrompt />
                 <PWAUpdatePrompt />
+                <NetworkCapsuleBar />
                 <EarthGlobeLauncher />
               </LiveDataProvider>
             </NodeListProvider>
