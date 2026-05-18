@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import {
   getEarthStatusSignature,
   getEarthStructuralSignature,
+  hasEarthStructuralChange,
 } from "../src/components/earth/globeDataSignature.ts";
 
 test("earth globe structural signature ignores live status churn", () => {
@@ -39,5 +40,13 @@ test("earth globe structural signature ignores live status churn", () => {
   assert.notEqual(
     getEarthStatusSignature(firstPoll),
     getEarthStatusSignature(secondPoll)
+  );
+  assert.equal(
+    hasEarthStructuralChange(
+      getEarthStructuralSignature(firstPoll, arcs),
+      secondPoll,
+      arcs
+    ),
+    false
   );
 });

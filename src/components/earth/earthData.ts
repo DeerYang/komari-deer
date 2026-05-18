@@ -214,6 +214,7 @@ export function buildEarthGlobeData({
   demoMode = false,
 }: BuildEarthGlobeDataInput) {
   const onlineSet = new Set(liveData?.online ?? []);
+  const hasLiveStatus = !!liveData;
   const sourceNodes: EarthNodeInput[] = demoMode
     ? Object.keys(EARTH_COORD_MAP).map((code) => ({
         uuid: `demo-${code}`,
@@ -234,7 +235,7 @@ export function buildEarthGlobeData({
       online: 0,
       offline: 0,
     };
-    const isOnline = demoMode || onlineSet.has(node.uuid);
+    const isOnline = demoMode || !hasLiveStatus || onlineSet.has(node.uuid);
 
     existing.servers.push(node.name || node.uuid || code);
     existing.online += isOnline ? 1 : 0;

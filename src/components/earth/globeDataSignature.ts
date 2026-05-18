@@ -50,3 +50,11 @@ export function getEarthStatusSignature(pointsData: EarthPointData[]) {
     .sort()
     .join("\u001d");
 }
+
+export function hasEarthStructuralChange(
+  previousSignature: string,
+  pointsData: EarthPointData[],
+  arcsData: EarthArcData[]
+) {
+  return getEarthStructuralSignature(pointsData, arcsData) !== previousSignature;
+}

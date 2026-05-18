@@ -8,10 +8,10 @@ import { X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
-import { useLiveData } from "@/contexts/LiveDataContext";
 import { useNodeList } from "@/contexts/NodeListContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { buildEarthGlobeData, DEFAULT_EARTH_USER_GEO } from "@/components/earth/earthData";
+import { setEarthGlobeOpenState } from "@/components/earth/earthGlobeOpenState";
 import { useUserGeo } from "@/components/earth/useUserGeo";
 
 const GlobeRenderer = dynamic(() => import("@/components/earth/GlobeRenderer"), {
@@ -19,14 +19,23 @@ const GlobeRenderer = dynamic(() => import("@/components/earth/GlobeRenderer"), 
   loading: () => <div className="deer-earth-loading">Loading globe...</div>,
 });
 
-const DARK_GLOBE_IMAGE =
-  "//upload.wikimedia.org/wikipedia/commons/b/b3/Solarsystemscope_texture_8k_earth_nightmap.jpg";
-const LIGHT_GLOBE_IMAGE =
-  "//upload.wikimedia.org/wikipedia/commons/0/04/Solarsystemscope_texture_8k_earth_daymap.jpg";
-const BUMP_IMAGE =
-  "//upload.wikimedia.org/wikipedia/commons/b/b3/Solarsystemscope_texture_8k_earth_nightmap.jpg";
-const DARK_BACKGROUND_IMAGE = "//upload.wikimedia.org/wikipedia/commons/6/60/ESO_-_Milky_Way.jpg";
+const DARK_GLOBE_IMAGE = "/assets/earth/earth-night.jpg";
+const LIGHT_GLOBE_IMAGE = "/assets/earth/earth-day.jpg";
+const BUMP_IMAGE = "/assets/earth/earth-topology.png";
 const THEME_COLOR = "#00d8ff";
+const EARTH_TEXTURES = [DARK_GLOBE_IMAGE, LIGHT_GLOBE_IMAGE, BUMP_IMAGE] as const;
+
+function preloadEarthTexture(src: string) {
+  const img = new Image();
+  img.decoding = "async";
+  img.src = src;
+  void img.decode().catch(() => undefined);
+}
+
+function preloadEarthGlobeRenderer() {
+  void import("@/components/earth/GlobeRenderer");
+  EARTH_TEXTURES.forEach(preloadEarthTexture);
+}
 
 function EarthIcon() {
   return (
@@ -70,7 +79,6 @@ export default function EarthGlobeLauncher() {
   const pathname = usePathname();
   const { t } = useTranslation();
   const { nodeList } = useNodeList();
-  const { live_data } = useLiveData();
   const { appearance, themeConfig } = useTheme();
   const { geo } = useUserGeo();
   const [open, setOpen] = useState(false);
@@ -110,20 +118,30 @@ export default function EarthGlobeLauncher() {
     };
   }, [open]);
 
+  useEffect(() => {
+    setEarthGlobeOpenState(open);
+    return () => setEarthGlobeOpenState(false);
+  }, [open]);
+
+  useEffect(() => {
+    if (!isHome) return undefined;
+    const timer = window.setTimeout(preloadEarthGlobeRenderer, 1200);
+    return () => window.clearTimeout(timer);
+  }, [isHome]);
+
   const earthData = useMemo(
     () =>
       buildEarthGlobeData({
         nodes: nodeList ?? [],
-        liveData: live_data?.data,
         userGeo: geo,
       }),
-    [geo, live_data?.data, nodeList]
+    [geo, nodeList]
   );
 
   const bgConfig = useMemo(
     () => ({
       bg: "rgba(0, 0, 0, 0)",
-      bgImage: isDark ? DARK_BACKGROUND_IMAGE : null,
+      bgImage: null,
       globeImage: isDark ? DARK_GLOBE_IMAGE : LIGHT_GLOBE_IMAGE,
       bumpImage: BUMP_IMAGE,
       atmosphere: THEME_COLOR,

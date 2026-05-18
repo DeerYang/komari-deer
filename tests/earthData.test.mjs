@@ -42,3 +42,23 @@ test("buildEarthGlobeData groups nodes by country and connects them to the user"
   assert.equal(user.code, "USER");
   assert.deepEqual(user.servers, ["Singapore"]);
 });
+
+test("buildEarthGlobeData treats nodes as online when live status is absent", () => {
+  const result = buildEarthGlobeData({
+    nodes: [
+      { uuid: "sg-1", name: "Singapore Edge", region: "SG" },
+      { uuid: "sg-2", name: "Singapore Backup", region: "SG" },
+    ],
+    userGeo: {
+      lat: 1.3521,
+      lng: 103.8198,
+      city: "Singapore",
+    },
+  });
+
+  const singapore = result.pointsData.find((point) => point.code === "SG");
+  assert.ok(singapore);
+  assert.equal(singapore.online, 2);
+  assert.equal(singapore.offline, 0);
+  assert.equal(singapore.status, "online");
+});

@@ -20,10 +20,14 @@ let __rpc2_singleton__: RPC2Client | null = null;
 let __rpc2_refcount = 0;
 
 export const RPC2Provider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // 创建/复用客户端实例，默认启用自动连接
+  // 创建/复用客户端实例；实时状态当前由 HTTP 轮询驱动，避免开发代理下的 WS 重试循环。
   const [client] = useState(() => {
     if (!__rpc2_singleton__) {
-      __rpc2_singleton__ = new RPC2Client("/api/rpc2", { autoConnect: true });
+      __rpc2_singleton__ = new RPC2Client("/api/rpc2", {
+        autoConnect: false,
+        autoReconnect: false,
+        enableHeartbeat: false,
+      });
     }
     return __rpc2_singleton__;
   });

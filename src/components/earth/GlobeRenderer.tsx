@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef } from "react";
 import Globe from "globe.gl";
 import type { EarthArcData, EarthPointData } from "./earthData";
-import { getEarthStatusSignature, getEarthStructuralSignature } from "./globeDataSignature";
+import { getEarthStructuralSignature, hasEarthStructuralChange } from "./globeDataSignature";
 
 type EarthBackgroundConfig = {
   bg: string;
@@ -23,12 +23,6 @@ type GlobeRendererProps = {
   logoUrl?: string;
   logoShape?: "circle" | "original";
   onReady?: () => void;
-};
-
-const STATUS_RING_COLOR: Record<EarthPointData["status"], string> = {
-  online: "#21d7a7",
-  partial: "#f5aa26",
-  offline: "#ff4f78",
 };
 
 function escapeHtml(value: string) {
@@ -81,7 +75,7 @@ export default function GlobeRenderer({
   const activeMarkerRef = useRef<HTMLElement | null>(null);
   const themeColorRef = useRef(themeColor);
   const bgConfigRef = useRef(bgConfig);
-  const dataSignatureRef = useRef({ structural: "", status: "" });
+  const dataSignatureRef = useRef("");
 
   const hideTooltip = useCallback(() => {
     const tooltip = tooltipRef.current;
@@ -168,9 +162,7 @@ export default function GlobeRenderer({
 
     const overlap = hasOverlap(pointsData);
     const initialAltitude = window.innerWidth <= 768 ? 3 : 2;
-    const globe = (Globe as any)({
-      rendererConfig: { antialias: true, alpha: true, preserveDrawingBuffer: true },
-    })(canvas)
+    const globe = new (Globe as any)(canvas)
       .width(canvas.clientWidth)
       .height(canvas.clientHeight)
       .backgroundColor(bgConfig.bg)
@@ -265,7 +257,7 @@ export default function GlobeRenderer({
         return wrapper;
       })
       .ringsData(pointsData.filter((point) => point.type === "server"))
-      .ringColor((point: EarthPointData) => STATUS_RING_COLOR[point.status] || themeColorRef.current)
+      .ringColor(() => themeColorRef.current)
       .ringMaxRadius(2)
       .ringPropagationSpeed(1)
       .ringRepeatPeriod(1250)
@@ -274,11 +266,11 @@ export default function GlobeRenderer({
       .arcStartLng((arc: EarthArcData) => arc.startLng)
       .arcEndLat((arc: EarthArcData) => arc.endLat)
       .arcEndLng((arc: EarthArcData) => arc.endLng)
-      .arcColor(() => [themeColorRef.current, "rgba(255, 0, 255, 0.58)"])
-      .arcDashLength(0.52)
+      .arcColor(() => themeColorRef.current)
+      .arcDashLength(0.5)
       .arcDashGap(1)
       .arcDashAnimateTime(1750)
-      .arcStroke(0.9)
+      .arcStroke(0.8)
       .arcAltitudeAutoScale(0.5);
 
     globe.pointOfView({ lat: userLat || 25, lng: userLng || 110, altitude: initialAltitude });
@@ -308,10 +300,7 @@ export default function GlobeRenderer({
 
     globeRef.current = globe;
     bgConfigRef.current = { ...bgConfig };
-    dataSignatureRef.current = {
-      structural: getEarthStructuralSignature(pointsData, arcsData),
-      status: getEarthStatusSignature(pointsData),
-    };
+    dataSignatureRef.current = getEarthStructuralSignature(pointsData, arcsData);
     onReady?.();
 
     return () => {
@@ -328,22 +317,15 @@ export default function GlobeRenderer({
     themeColorRef.current = themeColor;
     const globe = globeRef.current;
     if (!globe) return;
-    globe.arcColor(() => [themeColor, "rgba(255, 0, 255, 0.58)"]);
-    globe.ringColor((point: EarthPointData) => STATUS_RING_COLOR[point.status] || themeColor);
+    globe.arcColor(() => themeColor);
+    globe.ringColor(() => themeColor);
   }, [themeColor]);
 
   useEffect(() => {
     const globe = globeRef.current;
     if (!globe) return;
 
-    const nextSignature = {
-      structural: getEarthStructuralSignature(pointsData, arcsData),
-      status: getEarthStatusSignature(pointsData),
-    };
-    const structuralChanged = nextSignature.structural !== dataSignatureRef.current.structural;
-    const statusChanged = nextSignature.status !== dataSignatureRef.current.status;
-
-    if (!structuralChanged && !statusChanged) return;
+    if (!hasEarthStructuralChange(dataSignatureRef.current, pointsData, arcsData)) return;
 
     if (activeMarkerRef.current) {
       hideTooltip();
@@ -351,12 +333,9 @@ export default function GlobeRenderer({
 
     globe.htmlElementsData(pointsData);
     globe.ringsData(pointsData.filter((point) => point.type === "server"));
+    globe.arcsData(arcsData);
 
-    if (structuralChanged) {
-      globe.arcsData(arcsData);
-    }
-
-    dataSignatureRef.current = nextSignature;
+    dataSignatureRef.current = getEarthStructuralSignature(pointsData, arcsData);
   }, [pointsData, arcsData, hideTooltip]);
 
   useEffect(() => {

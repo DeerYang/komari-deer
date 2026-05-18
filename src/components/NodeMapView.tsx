@@ -2,18 +2,16 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, PointerEvent } from "react";
-import { geoGraticule10, geoNaturalEarth1, geoPath } from "d3-geo";
 import { MapPinned } from "lucide-react";
-import { feature } from "topojson-client";
 import { useTranslation } from "react-i18next";
 
 import type { NodeBasicInfo } from "@/contexts/NodeListContext";
 import type { LiveData } from "@/types/LiveData";
-import worldCountries50m from "@/data/world-countries-50m.json";
 import { buildMapViewSummary, type MapRegionSummary } from "@/utils/mapRegions";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Flag from "@/components/Flag";
+import { getProjectedWorldMap } from "@/components/nodeMapViewGeometry";
 
 import "./NodeMapView.css";
 
@@ -34,11 +32,6 @@ type HoveredRegion = {
 
 const SVG_WIDTH = 1000;
 const SVG_HEIGHT = 560;
-const MAP_HORIZONTAL_PADDING = 28;
-const MAP_TOP_PADDING = 42;
-const MAP_BOTTOM_INSET = 42;
-const SMALL_REGION_MARKER_AREA_THRESHOLD = 14;
-const SMALL_REGION_MARKER_SIZE_THRESHOLD = 7;
 const HOVER_CARD_GAP = 12;
 const HOVER_CARD_MAX_WIDTH = 320;
 const HOVER_CARD_FALLBACK_HEIGHT = 124;
@@ -95,58 +88,23 @@ export function NodeMapView({
   );
 
   const projectedMap = useMemo(() => {
-    const countriesGeo = feature(
-      worldCountries50m as never,
-      (worldCountries50m as unknown as { objects: { countries: never } }).objects.countries,
-    ) as unknown as { features: Array<{ id?: string; properties?: { name?: string } }> };
+    const worldMap = getProjectedWorldMap();
 
-    const projection = geoNaturalEarth1().fitExtent(
-      [
-        [MAP_HORIZONTAL_PADDING, MAP_TOP_PADDING],
-        [SVG_WIDTH - MAP_HORIZONTAL_PADDING, SVG_HEIGHT - MAP_BOTTOM_INSET],
-      ],
-      countriesGeo as never,
-    );
-
-    const pathGenerator = geoPath(projection);
-    const spherePath = pathGenerator({ type: "Sphere" }) ?? "";
-    const graticulePath = pathGenerator(geoGraticule10()) ?? "";
-
-    const countries = countriesGeo.features
+    const countries = worldMap.countries
       .map((country) => {
-        const name = country.properties?.name ?? String(country.id ?? "unknown");
-        const pathData = pathGenerator(country as never) ?? "";
-        const activeRegion = activeRegionsByMapName.get(name) ?? null;
-        const bounds = pathGenerator.bounds(country as never);
-        const width = bounds[1][0] - bounds[0][0];
-        const height = bounds[1][1] - bounds[0][1];
-        const area = pathGenerator.area(country as never);
-        const [markerX, markerY] = pathGenerator.centroid(country as never);
-        const shouldShowMarker =
-          Boolean(activeRegion) &&
-          Number.isFinite(markerX) &&
-          Number.isFinite(markerY) &&
-          (area < SMALL_REGION_MARKER_AREA_THRESHOLD ||
-            Math.max(width, height) < SMALL_REGION_MARKER_SIZE_THRESHOLD);
+        const activeRegion = activeRegionsByMapName.get(country.name) ?? null;
 
         return {
-          name,
-          pathData,
+          ...country,
           activeRegion,
-          marker:
-            shouldShowMarker
-              ? {
-                  x: markerX,
-                  y: markerY,
-                }
-              : null,
+          marker: activeRegion ? country.smallRegionMarker : null,
         };
       })
       .filter((country) => country.pathData);
 
     return {
-      spherePath,
-      graticulePath,
+      spherePath: worldMap.spherePath,
+      graticulePath: worldMap.graticulePath,
       countries,
     };
   }, [activeRegionsByMapName]);
