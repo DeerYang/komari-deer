@@ -17,7 +17,6 @@ import { CurrentTimeCard } from "@/components/CurrentTimeCard";
 import { Callouts } from "@/components/DashboardCallouts";
 import { NodeMapView } from "@/components/NodeMapView";
 import { useStatusCardsVisibility } from "@/hooks/useStatusCardsVisibility";
-import { useEarthGlobeOpen } from "@/components/earth/earthGlobeOpenState";
 
 // Intelligent speed formatting function
 const formatSpeed = (bytes: number): string => {
@@ -118,7 +117,6 @@ const renderSpeedStatusValue = ({
 
 export default function DashboardContent() {
   const [t] = useTranslation();
-  const isEarthGlobeOpen = useEarthGlobeOpen();
   const { live_data } = useLiveData();
   const { publicInfo } = usePublicInfo();
   const { themeConfig } = useTheme();
@@ -253,10 +251,6 @@ export default function DashboardContent() {
     }, 5000);
     return () => clearInterval(interval);
   }, [nodeList, refresh]);
-
-  if (isEarthGlobeOpen) {
-    return <div className="container mx-auto min-h-[70vh] px-4" aria-hidden="true" />;
-  }
 
   if (isLoading) {
     return <Loading />;
