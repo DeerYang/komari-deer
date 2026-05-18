@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef } from "react";
 import Globe from "globe.gl";
 import type { EarthArcData, EarthPointData } from "./earthData";
+import { getEarthStatusSignature, getEarthStructuralSignature } from "./globeDataSignature";
 
 type EarthBackgroundConfig = {
   bg: string;
@@ -80,6 +81,7 @@ export default function GlobeRenderer({
   const activeMarkerRef = useRef<HTMLElement | null>(null);
   const themeColorRef = useRef(themeColor);
   const bgConfigRef = useRef(bgConfig);
+  const dataSignatureRef = useRef({ structural: "", status: "" });
 
   const hideTooltip = useCallback(() => {
     const tooltip = tooltipRef.current;
@@ -306,6 +308,10 @@ export default function GlobeRenderer({
 
     globeRef.current = globe;
     bgConfigRef.current = { ...bgConfig };
+    dataSignatureRef.current = {
+      structural: getEarthStructuralSignature(pointsData, arcsData),
+      status: getEarthStatusSignature(pointsData),
+    };
     onReady?.();
 
     return () => {
@@ -329,10 +335,29 @@ export default function GlobeRenderer({
   useEffect(() => {
     const globe = globeRef.current;
     if (!globe) return;
+
+    const nextSignature = {
+      structural: getEarthStructuralSignature(pointsData, arcsData),
+      status: getEarthStatusSignature(pointsData),
+    };
+    const structuralChanged = nextSignature.structural !== dataSignatureRef.current.structural;
+    const statusChanged = nextSignature.status !== dataSignatureRef.current.status;
+
+    if (!structuralChanged && !statusChanged) return;
+
+    if (activeMarkerRef.current) {
+      hideTooltip();
+    }
+
     globe.htmlElementsData(pointsData);
     globe.ringsData(pointsData.filter((point) => point.type === "server"));
-    globe.arcsData(arcsData);
-  }, [pointsData, arcsData]);
+
+    if (structuralChanged) {
+      globe.arcsData(arcsData);
+    }
+
+    dataSignatureRef.current = nextSignature;
+  }, [pointsData, arcsData, hideTooltip]);
 
   useEffect(() => {
     const globe = globeRef.current;
