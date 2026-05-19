@@ -25,6 +25,13 @@ const BUMP_IMAGE = "/assets/earth/earth-topology.png";
 const MILKY_WAY_IMAGE = "/assets/earth/milky-way.jpg";
 const THEME_COLOR = "#00d8ff";
 const EARTH_TEXTURES = [DARK_GLOBE_IMAGE, LIGHT_GLOBE_IMAGE, BUMP_IMAGE, MILKY_WAY_IMAGE] as const;
+const EMPTY_EARTH_DATA = {
+  pointsData: [],
+  arcsData: [],
+  totalCount: 0,
+};
+
+let earthPreloadStarted = false;
 
 function preloadEarthTexture(src: string) {
   const img = new Image();
@@ -34,6 +41,8 @@ function preloadEarthTexture(src: string) {
 }
 
 function preloadEarthGlobeRenderer() {
+  if (earthPreloadStarted) return;
+  earthPreloadStarted = true;
   void import("@/components/earth/GlobeRenderer");
   EARTH_TEXTURES.forEach(preloadEarthTexture);
 }
@@ -81,12 +90,12 @@ export default function EarthGlobeLauncher() {
   const { t } = useTranslation();
   const { nodeList } = useNodeList();
   const { appearance, themeConfig } = useTheme();
-  const { geo } = useUserGeo();
   const [open, setOpen] = useState(false);
   const [closing, setClosing] = useState(false);
   const [globeReady, setGlobeReady] = useState(false);
   const [isDark, setIsDark] = useState(false);
   const isHome = pathname === "/" || pathname === "";
+  const { geo } = useUserGeo(open);
 
   useEffect(() => {
     const syncTheme = () => {
@@ -124,19 +133,16 @@ export default function EarthGlobeLauncher() {
     return () => setEarthGlobeOpenState(false);
   }, [open]);
 
-  useEffect(() => {
-    if (!isHome) return undefined;
-    const timer = window.setTimeout(preloadEarthGlobeRenderer, 1200);
-    return () => window.clearTimeout(timer);
-  }, [isHome]);
-
   const earthData = useMemo(
-    () =>
-      buildEarthGlobeData({
+    () => {
+      if (!open) return EMPTY_EARTH_DATA;
+
+      return buildEarthGlobeData({
         nodes: nodeList ?? [],
         userGeo: geo,
-      }),
-    [geo, nodeList]
+      });
+    },
+    [geo, nodeList, open]
   );
 
   const bgConfig = useMemo(
@@ -170,6 +176,9 @@ export default function EarthGlobeLauncher() {
         className={`deer-earth-launcher${open ? " is-hidden" : ""}`}
         title={t("common.map", { defaultValue: "Global Map" })}
         aria-label={t("common.map", { defaultValue: "Global Map" })}
+        onPointerEnter={preloadEarthGlobeRenderer}
+        onFocus={preloadEarthGlobeRenderer}
+        onTouchStart={preloadEarthGlobeRenderer}
         onClick={() => {
           setOpen(true);
           setGlobeReady(false);

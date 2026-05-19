@@ -119,13 +119,20 @@ async function fetchGeoInfo(): Promise<UserGeoInfo> {
   return fetchPromise;
 }
 
-export function useUserGeo() {
+export function useUserGeo(enabled = true) {
   const [geo, setGeo] = useState<UserGeoInfo>(cachedGeo || defaultGeo);
-  const [loading, setLoading] = useState(!cachedGeo);
+  const [loading, setLoading] = useState(enabled && !cachedGeo);
   const mounted = useRef(true);
 
   useEffect(() => {
     mounted.current = true;
+
+    if (!enabled) {
+      setLoading(false);
+      return () => {
+        mounted.current = false;
+      };
+    }
 
     if (cachedGeo) {
       setGeo(cachedGeo);
@@ -133,6 +140,7 @@ export function useUserGeo() {
       return undefined;
     }
 
+    setLoading(true);
     fetchGeoInfo().then((result) => {
       if (!mounted.current) return;
       setGeo(result);
@@ -142,7 +150,7 @@ export function useUserGeo() {
     return () => {
       mounted.current = false;
     };
-  }, []);
+  }, [enabled]);
 
   return { geo, loading };
 }

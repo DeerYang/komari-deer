@@ -116,7 +116,7 @@ export default function NetworkCapsuleBar() {
   const [networkInfo, setNetworkInfo] = useState<NetworkInfo | null>(null);
   const [networkLoading, setNetworkLoading] = useState(true);
   const [topVisible, setTopVisible] = useState(false);
-  const scrollContainersRef = useRef<HTMLElement[]>([]);
+  const lastScrollTopRef = useRef(0);
   const capsuleStyle = {
     "--deer-network-show-delay": `${SHOW_DELAY}ms`,
     "--deer-network-cycle-time": `${STAY_TIME + 1500}ms`,
@@ -127,14 +127,19 @@ export default function NetworkCapsuleBar() {
     document.documentElement.scrollTo?.({ top: 0, behavior: "smooth" });
     document.body.scrollTo?.({ top: 0, behavior: "smooth" });
 
-    scrollContainersRef.current.forEach((element) => {
-      if (element.scrollTop <= 0) return;
-      try {
-        element.scrollTo({ top: 0, behavior: "smooth" });
-      } catch {
-        element.scrollTop = 0;
-      }
-    });
+    Array.from(document.querySelectorAll<HTMLElement>("main, div, section"))
+      .filter((element) => {
+        if (element === document.body || element === document.documentElement) return false;
+        return element.scrollTop > 0;
+      })
+      .forEach((element) => {
+        if (element.scrollTop <= 0) return;
+        try {
+          element.scrollTo({ top: 0, behavior: "smooth" });
+        } catch {
+          element.scrollTop = 0;
+        }
+      });
   }, []);
 
   useEffect(() => {
@@ -174,49 +179,39 @@ export default function NetworkCapsuleBar() {
 
   useEffect(() => {
     let scrollTicking = false;
-    const refreshTimers: number[] = [];
 
-    const collectScrollContainers = () => {
-      scrollContainersRef.current = Array.from(document.querySelectorAll<HTMLElement>("main, div, section"))
-        .filter((element) => {
-          if (element === document.body || element === document.documentElement) return false;
-          return element.scrollHeight > element.clientHeight + 2;
-        });
+    const getScrollTop = (event?: Event) => {
+      const eventTargetScroll =
+        event?.target instanceof HTMLElement ? event.target.scrollTop || 0 : 0;
+
+      return Math.max(
+        window.scrollY || 0,
+        document.documentElement.scrollTop || 0,
+        document.body.scrollTop || 0,
+        eventTargetScroll,
+      );
     };
 
-    const getScrollTop = () => Math.max(
-      window.scrollY || 0,
-      document.documentElement.scrollTop || 0,
-      document.body.scrollTop || 0,
-      ...scrollContainersRef.current.map((element) => element.scrollTop || 0),
-    );
-
     const update = () => {
-      setTopVisible(getScrollTop() > 200);
+      const nextVisible = lastScrollTopRef.current > 200;
+      setTopVisible((current) => current === nextVisible ? current : nextVisible);
       scrollTicking = false;
     };
 
-    const scheduleUpdate = () => {
+    const scheduleUpdate = (event?: Event) => {
+      lastScrollTopRef.current = getScrollTop(event);
       if (scrollTicking) return;
       scrollTicking = true;
       window.requestAnimationFrame(update);
     };
 
-    const refreshScrollTargets = () => {
-      collectScrollContainers();
-      scheduleUpdate();
-    };
-
     window.addEventListener("scroll", scheduleUpdate, { capture: true, passive: true });
-    window.addEventListener("resize", refreshScrollTargets);
-    refreshScrollTargets();
-    refreshTimers.push(window.setTimeout(refreshScrollTargets, 500));
-    refreshTimers.push(window.setTimeout(refreshScrollTargets, 2000));
+    window.addEventListener("resize", scheduleUpdate);
+    scheduleUpdate();
 
     return () => {
       window.removeEventListener("scroll", scheduleUpdate, true);
-      window.removeEventListener("resize", refreshScrollTargets);
-      refreshTimers.forEach((timer) => window.clearTimeout(timer));
+      window.removeEventListener("resize", scheduleUpdate);
     };
   }, []);
 
