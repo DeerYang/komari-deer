@@ -11,7 +11,7 @@ import { formatBytes } from "@/utils/unitHelper";
 import { useLiveData } from "@/contexts/LiveDataContext";
 import { useNodeList } from "@/contexts/NodeListContext";
 import { usePublicInfo } from "@/contexts/PublicInfoContext";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useTheme, type CardLayout } from "@/contexts/ThemeContext";
 import Loading from "@/components/loading";
 import { CurrentTimeCard } from "@/components/CurrentTimeCard";
 import { Callouts } from "@/components/DashboardCallouts";
@@ -293,6 +293,7 @@ export default function DashboardContent() {
           themeConfig.cardLayout === 'modern' ? 'grid-cols-1 gap-3 md:grid-cols-2 md:auto-rows-[96px] xl:grid-cols-3' :
           themeConfig.cardLayout === 'minimal' ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3' :
           themeConfig.cardLayout === 'detailed' ? 'grid-cols-1 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4' :
+          themeConfig.cardLayout === 'compact' ? 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2' :
           'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4'
         }`}>
           {statusCards
@@ -333,7 +334,7 @@ type TopCardProps = {
   value: string | number | React.ReactNode;
   description?: string;
   icon?: React.ReactNode;
-  layout?: 'classic' | 'modern' | 'minimal' | 'detailed';
+  layout?: CardLayout;
   structuredValue?: boolean;
 };
 
@@ -346,6 +347,32 @@ const TopCard: React.FC<TopCardProps> = ({
   structuredValue = false,
 }) => {
   const mobileStructuredValueClass = "h-6 w-[5.75rem] shrink-0 overflow-hidden";
+
+  // Compact layout: Ultra-dense status card
+  if (layout === 'compact') {
+    return (
+      <Card className="overflow-hidden border shadow-sm bg-card hover:shadow-md transition-shadow duration-200">
+        <div className="p-2">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5 min-w-0 flex-1">
+              <div className="scale-90">{icon}</div>
+              <div className="text-[10px] font-medium text-muted-foreground whitespace-nowrap truncate">
+                {title}
+              </div>
+            </div>
+            <div className={structuredValue ? "min-w-0" : "text-xs font-bold shrink-0 leading-tight"}>
+              {value}
+            </div>
+          </div>
+          {description && (
+            <p className="text-[10px] text-muted-foreground mt-0.5 truncate">
+              {description}
+            </p>
+          )}
+        </div>
+      </Card>
+    );
+  }
 
   // Classic layout: Traditional card with icon on right
   if (layout === 'classic') {

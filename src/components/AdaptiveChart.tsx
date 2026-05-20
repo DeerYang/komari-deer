@@ -10,10 +10,11 @@ interface AdaptiveChartProps {
   label: string;
   subLabel?: string;
   color?: string;
-  compact?: boolean; // Compact mode for table views
+  compact?: boolean; // Compact mode for table views (legacy)
+  size?: number; // Custom chart pixel size (circle), overrides compact
 }
 
-export default function AdaptiveChart({ value, label, subLabel, color, compact = false }: AdaptiveChartProps) {
+export default function AdaptiveChart({ value, label, subLabel, color, compact = false, size }: AdaptiveChartProps) {
   const { themeConfig } = useTheme();
   const chartValue = Math.min(Math.max(value, 0), 100);
 
@@ -58,9 +59,11 @@ export default function AdaptiveChart({ value, label, subLabel, color, compact =
     }
   };
 
+  const isCompact = compact || !!size;
+
   // Minimal Design
   if (themeConfig.graphDesign === 'minimal') {
-    if (compact) {
+    if (isCompact) {
       return (
         <div className="flex items-center justify-center">
           <div className={`text-sm font-bold ${getColorClass(chartValue)}`}>
@@ -86,7 +89,7 @@ export default function AdaptiveChart({ value, label, subLabel, color, compact =
 
   // Progress Bar Design
   if (themeConfig.graphDesign === 'progress') {
-    if (compact) {
+    if (isCompact) {
       return (
         <div className="flex items-center justify-center">
           <div className="w-[50px] space-y-1">
@@ -118,7 +121,7 @@ export default function AdaptiveChart({ value, label, subLabel, color, compact =
 
   // Bar Chart Design
   if (themeConfig.graphDesign === 'bar') {
-    if (compact) {
+    if (isCompact) {
       return (
         <div className="flex items-center justify-center">
           <div className="h-[40px] w-[30px] flex flex-col justify-end items-center">
@@ -172,5 +175,5 @@ export default function AdaptiveChart({ value, label, subLabel, color, compact =
   }
 
   // Default: Circle Design
-  return <CircleChart value={value} label={label} subLabel={subLabel} color={color} compact={compact} />;
+  return <CircleChart value={value} label={label} subLabel={subLabel} color={color} compact={compact} size={size} />;
 }

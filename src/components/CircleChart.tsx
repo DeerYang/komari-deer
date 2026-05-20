@@ -9,10 +9,11 @@ interface CircleChartProps {
   label: string;
   subLabel?: string;
   color?: string; // Optional override
-  compact?: boolean; // Compact mode for table views
+  compact?: boolean; // Compact mode for table views (legacy, prefer size)
+  size?: number; // Custom pixel size, overrides compact default
 }
 
-export default function CircleChart({ value, label, subLabel, color, compact = false }: CircleChartProps) {
+export default function CircleChart({ value, label, subLabel, color, compact = false, size }: CircleChartProps) {
   const { themeConfig } = useTheme();
 
   // Clamp value
@@ -52,18 +53,22 @@ export default function CircleChart({ value, label, subLabel, color, compact = f
     },
   ];
 
-  // Compact mode for table views
-  if (compact) {
+  const chartSize = size ?? (compact ? 40 : 90);
+  const barSizeVal = size ? Math.max(4, Math.round(size * 0.09)) : (compact ? 7 : 8);
+  const showLabels = !compact || size !== undefined;
+
+  // Small mode (no labels) – only when compact=true without explicit size
+  if (!showLabels) {
     return (
       <div className="flex items-center justify-center">
-        <div className="h-[40px] w-[40px] relative">
+        <div className="relative" style={{ height: chartSize, width: chartSize }}>
           <ResponsiveContainer width="100%" height="100%">
             <RadialBarChart
               cx="50%"
               cy="50%"
               innerRadius="65%"
               outerRadius="95%"
-              barSize={7}
+              barSize={barSizeVal}
               data={data}
               startAngle={90}
               endAngle={-270}
@@ -95,17 +100,19 @@ export default function CircleChart({ value, label, subLabel, color, compact = f
     );
   }
 
-  // Default mode with labels
+  // Default / sized mode with labels
+  const centerTextClass = chartSize < 55 ? 'text-xs' : chartSize < 70 ? 'text-sm' : 'text-base';
+
   return (
-    <div className="flex flex-col items-center justify-center p-2">
-      <div className="h-[90px] w-[90px] relative">
+    <div className="flex flex-col items-center justify-center p-1">
+      <div className="relative" style={{ height: chartSize, width: chartSize }}>
         <ResponsiveContainer width="100%" height="100%">
           <RadialBarChart
             cx="50%"
             cy="50%"
             innerRadius="70%"
             outerRadius="95%"
-            barSize={8}
+            barSize={barSizeVal}
             data={data}
             startAngle={90}
             endAngle={-270}
@@ -128,14 +135,14 @@ export default function CircleChart({ value, label, subLabel, color, compact = f
 
         {/* Centered Percentage */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <span className="text-base font-bold text-foreground drop-shadow-sm tracking-tight">
+          <span className={`font-bold text-foreground drop-shadow-sm tracking-tight ${centerTextClass}`}>
             {Math.round(chartValue)}%
           </span>
         </div>
       </div>
 
       {/* Labels */}
-      <div className="text-center mt-2">
+      <div className="text-center mt-1">
         <div className="text-xs font-semibold text-foreground/90">{label}</div>
         {subLabel && (
           <div className="text-[10px] text-muted-foreground/60 mt-0.5">{subLabel}</div>

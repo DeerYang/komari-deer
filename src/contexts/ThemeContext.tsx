@@ -15,7 +15,7 @@ import { updateSettings } from "@/lib/api";
 import i18n, { detectClientLanguage, normalizeLanguage } from "@/i18n/config";
 
 export type ColorTheme = "default" | "ocean" | "sunset" | "forest" | "midnight" | "rose";
-export type CardLayout = "classic" | "modern" | "minimal" | "detailed";
+export type CardLayout = "classic" | "modern" | "minimal" | "detailed" | "compact";
 export type CardDesign = "default" | "quality-bars";
 export type StatusDesign = "default" | "speed";
 export type GraphDesign = "circle" | "progress" | "bar" | "minimal";
@@ -100,7 +100,7 @@ const I18NEXT_STORAGE_KEY = "i18nextLng";
 const LOCAL_OVERRIDE_BASE_SIGNATURE_KEY = "komari-theme-local-override-base";
 
 const COLOR_THEMES: ColorTheme[] = ["default", "ocean", "sunset", "forest", "midnight", "rose"];
-const CARD_LAYOUTS: CardLayout[] = ["classic", "modern", "minimal", "detailed"];
+const CARD_LAYOUTS: CardLayout[] = ["classic", "modern", "minimal", "detailed", "compact"];
 const CARD_DESIGNS: CardDesign[] = ["default", "quality-bars"];
 const STATUS_DESIGNS: StatusDesign[] = ["default", "speed"];
 const GRAPH_DESIGNS: GraphDesign[] = ["circle", "progress", "bar", "minimal"];

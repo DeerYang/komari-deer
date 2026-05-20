@@ -84,6 +84,11 @@ const ThemeSwitcher = () => {
       label: t('themeCustomizer.cardLayouts.detailed.label', { defaultValue: 'Detailed' }),
       description: t('themeCustomizer.cardLayouts.detailed.description', { defaultValue: 'Icon top, centered' }),
     },
+    {
+      value: 'compact',
+      label: t('themeCustomizer.cardLayouts.compact.label', { defaultValue: 'Compact' }),
+      description: t('themeCustomizer.cardLayouts.compact.description', { defaultValue: 'Small and dense' }),
+    },
   ];
 
   const cardDesigns: { value: CardDesign; label: string; description: string }[] = [

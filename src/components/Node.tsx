@@ -40,6 +40,21 @@ export function formatUptime(seconds: number, t: TFunction): string {
   return parts.join(" ");
 }
 
+/** Compact uptime formatter: 72d 5h 25m */
+function formatUptimeCompact(seconds: number): string {
+  if (!seconds || seconds < 0) return "0s";
+  const d = Math.floor(seconds / 86400);
+  const h = Math.floor((seconds % 86400) / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = Math.floor(seconds % 60);
+  const parts = [];
+  if (d) parts.push(`${d}d`);
+  if (h) parts.push(`${h}h`);
+  if (m) parts.push(`${m}m`);
+  if ((s || parts.length === 0) && !d) parts.push(`${s}s`);
+  return parts.join(" ");
+}
+
 export function getTrafficPercentage(totalUp: number, totalDown: number, limit: number, type: "max" | "min" | "sum" | "up" | "down") {
   if (limit === 0) return 0;
   switch (type) {
@@ -274,6 +289,7 @@ const Node = ({ basic, live, online }: NodeProps) => {
     modern: "w-full transition-all duration-200 hover:shadow-lg overflow-hidden group border-none bg-gradient-to-br from-card to-card/50 shadow-sm",
     minimal: "w-full transition-all duration-200 hover:shadow-md overflow-hidden group bg-gradient-to-br from-muted/40 to-muted/20 rounded-xl border border-border/50",
     detailed: "w-full transition-all duration-200 hover:shadow-xl overflow-hidden group border-2 shadow-md hover:border-primary/30",
+    compact: "w-full transition-all duration-200 hover:shadow-md hover:border-primary/40 overflow-hidden group border rounded-lg",
   };
 
   const headerStyles = {
@@ -281,6 +297,7 @@ const Node = ({ basic, live, online }: NodeProps) => {
     modern: "pb-3 pt-3 px-4 space-y-0 bg-primary/5 border-b border-primary/10",
     minimal: "pb-2 pt-4 px-4 space-y-0",
     detailed: "pb-3 pt-5 px-5 space-y-0 bg-gradient-to-r from-primary/20 via-primary/10 to-primary/20 border-b-2",
+    compact: "pb-1 pt-3 px-3 space-y-0",
   };
 
   const contentStyles = {
@@ -288,6 +305,7 @@ const Node = ({ basic, live, online }: NodeProps) => {
     modern: "p-4 pt-4 bg-gradient-to-b from-background/50 to-transparent",
     minimal: "p-4 pt-3",
     detailed: "p-5 pt-4 bg-gradient-to-b from-background to-muted/10",
+    compact: "p-3 pt-2",
   };
 
   const footerStyles = {
@@ -295,6 +313,7 @@ const Node = ({ basic, live, online }: NodeProps) => {
     modern: "pb-3 pt-0 px-4 flex justify-between items-center bg-muted/20 border-t",
     minimal: "pb-3 pt-0 px-4 flex justify-between items-center",
     detailed: "pb-4 pt-0 px-5 flex justify-between items-center bg-muted/30 border-t-2",
+    compact: "pb-2 pt-0 px-3 flex justify-between items-center",
   };
 
   return (
@@ -316,7 +335,8 @@ const Node = ({ basic, live, online }: NodeProps) => {
               <div className="flex flex-row min-w-0 items-center">
                 <Link href={`/instance/${basic.uuid}`} className="group-hover:text-primary transition-colors overflow-hidden flex-1">
                   <h3 className={`font-bold truncate pr-2 tracking-tight ${
-                    themeConfig.cardLayout === 'detailed' ? 'text-lg' : 'text-base'
+                    themeConfig.cardLayout === 'detailed' ? 'text-lg' :
+                    themeConfig.cardLayout === 'compact' ? 'text-sm' : 'text-base'
                   }`}>{basic.name}</h3>
                 </Link>
                 <div className="flex items-center gap-1 shrink-0">
@@ -337,7 +357,7 @@ const Node = ({ basic, live, online }: NodeProps) => {
               </div>
               <div className="flex items-center text-[11px] text-muted-foreground/80 gap-2 mt-0.5">
                 <span className="flex items-center gap-1.5 bg-muted/50 px-1.5 py-0.5 rounded min-w-0">
-                  <img src={getOSImage(basic.os)} alt={basic.os} className="w-3 h-3 flex-shrink-0" />
+                  <img src={getOSImage(basic.os)} alt={basic.os} className={`flex-shrink-0 ${themeConfig.cardLayout === 'compact' ? 'w-3 h-3' : 'w-3 h-3'}`} />
                   <span className="truncate">{getOSName(basic.os)}</span>
                 </span>
                 {themeConfig.cardLayout === 'detailed' && (
@@ -346,118 +366,193 @@ const Node = ({ basic, live, online }: NodeProps) => {
                   </span>
                 )}
                 <span className="opacity-40">•</span>
-                <span>{formatUptime(liveData.uptime, t)}</span>
+                <span>
+                  {themeConfig.cardLayout === 'compact'
+                    ? formatUptimeCompact(liveData.uptime)
+                    : formatUptime(liveData.uptime, t)}
+                </span>
               </div>
             </div>
           </div>
         </div>
       </CardHeader>
 
-      {themeConfig.cardLayout !== 'minimal' && <Separator className="opacity-50" />}
+      {themeConfig.cardLayout !== 'minimal' && themeConfig.cardLayout !== 'compact' && <Separator className="opacity-50" />}
 
       {/* Main Content: Metrics */}
       <CardContent className={contentStyles[themeConfig.cardLayout] || contentStyles.classic}>
-        {/* Charts Grid - layout affects arrangement */}
-        <div className={`grid mb-4 ${
-          themeConfig.cardLayout === 'minimal' ? 'grid-cols-3 gap-3' :
-          themeConfig.cardLayout === 'detailed' ? 'grid-cols-3 gap-4' :
-          themeConfig.cardLayout === 'modern' ? 'grid-cols-3 gap-2' :
-          'grid-cols-3 gap-2'
-        }`}>
-          <AdaptiveChart
-            value={liveData.cpu.usage}
-            label="CPU"
-            subLabel={`${liveData.cpu.usage.toFixed(1)}%`}
-          />
-          <AdaptiveChart
-            value={memoryUsagePercent}
-            label="RAM"
-            subLabel={formatBytes(liveData.ram.used)}
-          />
-          <AdaptiveChart
-            value={diskUsagePercent}
-            label="Disk"
-            subLabel={formatBytes(liveData.disk.used)}
-          />
-        </div>
-
-        {/* Network Stats */}
-        <div className={`rounded-lg p-3 space-y-2 text-sm ${
-          themeConfig.cardLayout === 'modern' ? 'bg-primary/5 border border-primary/10' :
-          themeConfig.cardLayout === 'minimal' ? 'bg-background/50 border border-border/30' :
-          themeConfig.cardLayout === 'detailed' ? 'bg-muted/40 border-2 border-muted' :
-          'bg-muted/30'
-        }`}>
-          <div className="flex justify-between items-center">
-             <span className="text-muted-foreground flex items-center gap-1">
-               <Activity className="h-3 w-3" /> {t("nodeCard.networkSpeed")}
-             </span>
-             <div className="flex gap-3 font-mono text-xs">
-                <span className="flex items-center text-green-600 dark:text-green-400">
-                  <ArrowUp className="h-3 w-3 mr-0.5" /> {uploadSpeed}/s
+        {themeConfig.cardLayout === 'compact' ? (
+          <>
+            {/* Compact Metrics Row */}
+            <div className="grid grid-cols-3 gap-1 mb-2">
+              <AdaptiveChart value={liveData.cpu.usage} label="CPU" subLabel={`${liveData.cpu.usage.toFixed(0)}%`} size={52} />
+              <AdaptiveChart value={memoryUsagePercent} label="RAM" subLabel={formatBytes(liveData.ram.used)} size={52} />
+              <AdaptiveChart value={diskUsagePercent} label="Disk" subLabel={formatBytes(liveData.disk.used)} size={52} />
+            </div>
+            {/* Compact Network */}
+            <div className="rounded-md p-2 space-y-1 text-xs bg-muted/30">
+              <div className="flex justify-between items-center">
+                <span className="text-muted-foreground flex items-center gap-1">
+                  <Activity className="h-3 w-3" /> {t("nodeCard.networkSpeed")}
                 </span>
-                <span className="flex items-center text-blue-600 dark:text-blue-400">
-                  <ArrowDown className="h-3 w-3 mr-0.5" /> {downloadSpeed}/s
-                </span>
-             </div>
-          </div>
-          
-          <Separator className="opacity-30" />
-          
-          <div className="flex justify-between items-center">
-            <span className="text-muted-foreground flex items-center gap-1">
-               {t("nodeCard.totalTraffic")}
-            </span>
-             <div className="flex gap-3 font-mono text-xs text-muted-foreground">
-                <span className="flex items-center">
-                  <ArrowUp className="h-3 w-3 mr-0.5" /> {totalUpload}
-                </span>
-                <span className="flex items-center">
-                  <ArrowDown className="h-3 w-3 mr-0.5" /> {totalDownload}
-                </span>
-             </div>
-          </div>
-
-          <Separator className="opacity-30" />
-
-          {/* Ping Statistics */}
-          {themeConfig.cardDesign === "quality-bars" ? (
-            <PingQualityBars pingStats={pingStats} t={t} />
-          ) : (
-            <div className="flex justify-between items-center">
-              <span className="text-muted-foreground">{t("nodeCard.pingStats")}</span>
-              {pingStats.hasData ? (
-                <div className="flex gap-3 font-mono text-xs text-muted-foreground">
-                  <span>{pingStats.avgLoss.toFixed(1)}% {t("chart.lossRate")}</span>
-                  <span>{pingStats.avgVolatility.toFixed(1)} {t("chart.volatility")}</span>
+                <div className="flex gap-2 font-mono text-[10px]">
+                  <span className="flex items-center text-green-600 dark:text-green-400">
+                    <ArrowUp className="h-3 w-3 mr-0.5" /> {uploadSpeed}/s
+                  </span>
+                  <span className="flex items-center text-blue-600 dark:text-blue-400">
+                    <ArrowDown className="h-3 w-3 mr-0.5" /> {downloadSpeed}/s
+                  </span>
                 </div>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-muted-foreground">{t("nodeCard.totalTraffic")}</span>
+                <div className="flex gap-2 font-mono text-[10px] text-muted-foreground">
+                  <span className="flex items-center">
+                    <ArrowUp className="h-3 w-3 mr-0.5" /> {totalUpload}
+                  </span>
+                  <span className="flex items-center">
+                    <ArrowDown className="h-3 w-3 mr-0.5" /> {totalDownload}
+                  </span>
+                </div>
+              </div>
+              {/* Ping - simplified */}
+              {themeConfig.cardDesign === "quality-bars" ? (
+                <PingQualityBars pingStats={pingStats} t={t} />
               ) : (
-                <span className="text-xs text-muted-foreground/70 italic">{t("nodeCard.noPingData")}</span>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">{t("nodeCard.pingStats")}</span>
+                  {pingStats.hasData ? (
+                    <div className="flex gap-2 font-mono text-[10px] text-muted-foreground">
+                      <span>{pingStats.avgLoss.toFixed(1)}% {t("chart.lossRate")}</span>
+                      <span>{pingStats.avgVolatility.toFixed(1)} {t("chart.volatility")}</span>
+                    </div>
+                  ) : (
+                    <span className="text-[10px] text-muted-foreground/70 italic">{t("nodeCard.noPingData")}</span>
+                  )}
+                </div>
+              )}
+              {/* Traffic Limit */}
+              {basic.traffic_limit > 0 && (
+                <div className="pt-1">
+                  <div className="flex justify-between text-[9px] mb-0.5 text-muted-foreground">
+                    <span>{trafficLimitType.toUpperCase()} Limit</span>
+                    <span className="font-mono">{formatBytes(trafficUsed)} / {formatBytes(basic.traffic_limit)}</span>
+                  </div>
+                  <div className="h-1 w-full bg-secondary rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-primary/70 rounded-full"
+                      style={{ width: `${Math.min(trafficPercentage, 100)}%` }}
+                    />
+                  </div>
+                </div>
               )}
             </div>
-          )}
-
-          {/* Traffic Limit Progress (if exists) */}
-          {basic.traffic_limit > 0 && (
-            <div className="mt-2 pt-1">
-               <div className="flex justify-between text-[10px] mb-1 text-muted-foreground">
-                 <span>{trafficLimitType.toUpperCase()} Limit</span>
-                 <span className="font-mono">
-                   {formatBytes(trafficUsed)} / {formatBytes(basic.traffic_limit)}
-                 </span>
-               </div>
-               <div className="h-1.5 w-full bg-secondary rounded-full overflow-hidden">
-                 <div 
-                   className="h-full bg-primary/70 rounded-full"
-                   style={{ width: `${Math.min(trafficPercentage, 100)}%` }}
-                 />
-               </div>
-               <div className="mt-1 flex justify-end text-[10px] font-mono text-muted-foreground">
-                 <span>{formatTrafficPercentage(trafficPercentage)}</span>
-               </div>
+          </>
+        ) : (
+          <>
+            {/* Charts Grid - layout affects arrangement */}
+            <div className={`grid mb-4 ${
+              themeConfig.cardLayout === 'minimal' ? 'grid-cols-3 gap-3' :
+              themeConfig.cardLayout === 'detailed' ? 'grid-cols-3 gap-4' :
+              themeConfig.cardLayout === 'modern' ? 'grid-cols-3 gap-2' :
+              'grid-cols-3 gap-2'
+            }`}>
+              <AdaptiveChart
+                value={liveData.cpu.usage}
+                label="CPU"
+                subLabel={`${liveData.cpu.usage.toFixed(1)}%`}
+              />
+              <AdaptiveChart
+                value={memoryUsagePercent}
+                label="RAM"
+                subLabel={formatBytes(liveData.ram.used)}
+              />
+              <AdaptiveChart
+                value={diskUsagePercent}
+                label="Disk"
+                subLabel={formatBytes(liveData.disk.used)}
+              />
             </div>
-          )}
-        </div>
+
+            {/* Network Stats */}
+            <div className={`rounded-lg p-3 space-y-2 text-sm ${
+              themeConfig.cardLayout === 'modern' ? 'bg-primary/5 border border-primary/10' :
+              themeConfig.cardLayout === 'minimal' ? 'bg-background/50 border border-border/30' :
+              themeConfig.cardLayout === 'detailed' ? 'bg-muted/40 border-2 border-muted' :
+              'bg-muted/30'
+            }`}>
+              <div className="flex justify-between items-center">
+                <span className="text-muted-foreground flex items-center gap-1">
+                  <Activity className="h-3 w-3" /> {t("nodeCard.networkSpeed")}
+                </span>
+                <div className="flex gap-3 font-mono text-xs">
+                  <span className="flex items-center text-green-600 dark:text-green-400">
+                    <ArrowUp className="h-3 w-3 mr-0.5" /> {uploadSpeed}/s
+                  </span>
+                  <span className="flex items-center text-blue-600 dark:text-blue-400">
+                    <ArrowDown className="h-3 w-3 mr-0.5" /> {downloadSpeed}/s
+                  </span>
+                </div>
+              </div>
+
+              <Separator className="opacity-30" />
+
+              <div className="flex justify-between items-center">
+                <span className="text-muted-foreground flex items-center gap-1">
+                  {t("nodeCard.totalTraffic")}
+                </span>
+                <div className="flex gap-3 font-mono text-xs text-muted-foreground">
+                  <span className="flex items-center">
+                    <ArrowUp className="h-3 w-3 mr-0.5" /> {totalUpload}
+                  </span>
+                  <span className="flex items-center">
+                    <ArrowDown className="h-3 w-3 mr-0.5" /> {totalDownload}
+                  </span>
+                </div>
+              </div>
+
+              <Separator className="opacity-30" />
+
+              {/* Ping Statistics */}
+              {themeConfig.cardDesign === "quality-bars" ? (
+                <PingQualityBars pingStats={pingStats} t={t} />
+              ) : (
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">{t("nodeCard.pingStats")}</span>
+                  {pingStats.hasData ? (
+                    <div className="flex gap-3 font-mono text-xs text-muted-foreground">
+                      <span>{pingStats.avgLoss.toFixed(1)}% {t("chart.lossRate")}</span>
+                      <span>{pingStats.avgVolatility.toFixed(1)} {t("chart.volatility")}</span>
+                    </div>
+                  ) : (
+                    <span className="text-xs text-muted-foreground/70 italic">{t("nodeCard.noPingData")}</span>
+                  )}
+                </div>
+              )}
+
+              {/* Traffic Limit Progress (if exists) */}
+              {basic.traffic_limit > 0 && (
+                <div className="mt-2 pt-1">
+                  <div className="flex justify-between text-[10px] mb-1 text-muted-foreground">
+                    <span>{trafficLimitType.toUpperCase()} Limit</span>
+                    <span className="font-mono">
+                      {formatBytes(trafficUsed)} / {formatBytes(basic.traffic_limit)}
+                    </span>
+                  </div>
+                  <div className="h-1.5 w-full bg-secondary rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-primary/70 rounded-full"
+                      style={{ width: `${Math.min(trafficPercentage, 100)}%` }}
+                    />
+                  </div>
+                  <div className="mt-1 flex justify-end text-[10px] font-mono text-muted-foreground">
+                    <span>{formatTrafficPercentage(trafficPercentage)}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </>
+        )}
       </CardContent>
 
       {/* Footer: Price & Extra Info */}
@@ -472,6 +567,7 @@ const Node = ({ basic, live, online }: NodeProps) => {
               tags={basic.tags}
               ip4={basic.ipv4}
               ip6={basic.ipv6}
+              compact={themeConfig.cardLayout === 'compact'}
            />
         </CardFooter>
       )}
@@ -489,6 +585,7 @@ type NodeGridProps = {
 };
 
 export const NodeGrid = ({ nodes, liveData }: NodeGridProps) => {
+  const { themeConfig } = useTheme();
   // Ensure liveData is valid
   const onlineNodes = liveData && liveData.online ? liveData.online : [];
 
@@ -506,11 +603,15 @@ export const NodeGrid = ({ nodes, liveData }: NodeGridProps) => {
     return a.weight - b.weight;
   });
 
+  const isCompact = themeConfig.cardLayout === 'compact';
+
   return (
     <div
-      className="grid gap-6 py-4 box-border w-full"
+      className={`grid box-border w-full ${isCompact ? 'gap-4 py-3' : 'gap-6 py-4'}`}
       style={{
-        gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
+        gridTemplateColumns: isCompact
+          ? "repeat(auto-fill, minmax(220px, 1fr))"
+          : "repeat(auto-fill, minmax(320px, 1fr))",
       }}
     >
       {sortedNodes.map((node) => {
