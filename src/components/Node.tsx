@@ -42,7 +42,7 @@ export function formatUptime(seconds: number, t: TFunction): string {
   return parts.join(" ");
 }
 
-/** Compact uptime formatter: 72d 5h 25m */
+/** Compact uptime formatter: 72d 5h 25m 30s */
 function formatUptimeCompact(seconds: number): string {
   if (!seconds || seconds < 0) return "0s";
   const d = Math.floor(seconds / 86400);
@@ -53,7 +53,7 @@ function formatUptimeCompact(seconds: number): string {
   if (d) parts.push(`${d}d`);
   if (h) parts.push(`${h}h`);
   if (m) parts.push(`${m}m`);
-  if ((s || parts.length === 0) && !d) parts.push(`${s}s`);
+  if (s || parts.length === 0) parts.push(`${s}s`);
   return parts.join(" ");
 }
 
@@ -484,53 +484,64 @@ const Node = ({ basic, live, online }: NodeProps) => {
         id={basic.uuid}
         className="group relative flex min-h-[404px] w-full overflow-hidden rounded-[14px] border border-[#273044] bg-[linear-gradient(180deg,rgba(17,22,34,0.98),rgba(12,16,28,0.99))] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_12px_32px_rgba(0,0,0,0.34)] transition-all duration-300 hover:border-[#5e6dff]/45"
       >
+        {/* Offline overlay - simple version */}
+        {!online && (
+          <div className="absolute inset-0 z-10 bg-black/50 backdrop-blur-sm">
+            <div
+              className="absolute inset-0 opacity-10"
+              style={{
+                backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 15px, rgba(255,255,255,0.05) 15px, rgba(255,255,255,0.05) 30px)'
+              }}
+            />
+          </div>
+        )}
         <div className="relative flex min-h-0 w-full flex-col">
           {/* Header */}
-          <div className="flex min-h-[56px] justify-between items-start">
+          <div className="flex min-h-[56px] justify-between items-center">
             <div className="flex flex-1 min-w-0 items-center gap-3 overflow-hidden">
               <div className="flex-shrink-0">
                 <Flag flag={basic.region} />
               </div>
               <div className="flex flex-col flex-1 min-w-0">
-                <div className="flex flex-row min-w-0 items-center">
+                <div className="flex flex-row min-w-0 items-center gap-1.5">
                   <Link
                     href={`/instance/${basic.uuid}`}
-                    className="group-hover:text-primary transition-colors overflow-hidden flex-1"
+                    className="group-hover:text-primary transition-colors overflow-hidden flex-1 min-w-0"
                   >
-                    <h3 className="font-bold truncate pr-2 tracking-tight text-base">
+                    <h3 className="font-bold truncate tracking-tight text-base">
                       {basic.name}
                     </h3>
                   </Link>
-                  <div className="flex items-center gap-1 shrink-0">
-                    {live?.message && <Tips color="#CE282E">{live.message}</Tips>}
-                    <MiniPingChartFloat
-                      uuid={basic.uuid}
-                      hours={24}
-                      trigger={
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 text-muted-foreground hover:text-primary"
-                        >
-                          <TrendingUp className="h-4 w-4" />
-                        </Button>
-                      }
-                    />
-                    <Badge
-                      variant={online ? "default" : "destructive"}
-                      className={online ? "bg-green-600 hover:bg-green-700" : ""}
-                    >
-                      {online ? t("nodeCard.online") : t("nodeCard.offline")}
-                    </Badge>
-                  </div>
+                  {live?.message && <Tips color="#CE282E">{live.message}</Tips>}
+                  <MiniPingChartFloat
+                    uuid={basic.uuid}
+                    hours={24}
+                    trigger={
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 text-muted-foreground hover:text-primary flex-shrink-0"
+                      >
+                        <TrendingUp className="h-3.5 w-3.5" />
+                      </Button>
+                    }
+                  />
                 </div>
                 <div className="flex items-center text-[11px] text-muted-foreground/80 gap-2 mt-0.5">
-                  <span className="flex items-center gap-1.5 bg-muted/50 px-1.5 py-0.5 rounded min-w-0">
+                  <span className="flex items-center gap-1.5 bg-muted/50 px-1.5 py-0.5 rounded">
                     <img src={getOSImage(basic.os)} alt={basic.os} className="w-3 h-3 flex-shrink-0" />
-                    <span className="truncate">{getOSName(basic.os)}</span>
+                    <span className="whitespace-nowrap">{getOSName(basic.os)}</span>
                   </span>
+                  <span
+                    className={cn(
+                      "w-1.5 h-1.5 rounded-full flex-shrink-0",
+                      online ? "bg-green-500" : "bg-red-500"
+                    )}
+                    title={online ? t("nodeCard.online") : t("nodeCard.offline")}
+                  />
+                  <span className="flex-1" />
                   <span className="opacity-40">•</span>
-                  <span>{formatUptime(liveData.uptime, t)}</span>
+                  <span className="whitespace-nowrap font-mono">{formatUptimeCompact(liveData.uptime)}</span>
                 </div>
               </div>
             </div>
@@ -693,7 +704,7 @@ const Node = ({ basic, live, online }: NodeProps) => {
             </div>
           </div>
         ) : (
-          <div className="flex justify-between items-start">
+          <div className="flex justify-between items-center">
             <div className="flex flex-1 min-w-0 items-center gap-3 overflow-hidden">
               {/* Flag position changes based on layout */}
               {themeConfig.cardLayout !== 'detailed' && (
@@ -702,32 +713,27 @@ const Node = ({ basic, live, online }: NodeProps) => {
                 </div>
               )}
               <div className="flex flex-col flex-1 min-w-0">
-                <div className="flex flex-row min-w-0 items-center">
+                <div className="flex flex-row min-w-0 items-center gap-2">
                   <Link href={`/instance/${basic.uuid}`} className="group-hover:text-primary transition-colors overflow-hidden flex-1">
-                    <h3 className={`font-bold truncate pr-2 tracking-tight ${
+                    <h3 className={`font-bold truncate tracking-tight ${
                       themeConfig.cardLayout === 'detailed' ? 'text-lg' : 'text-base'
                     }`}>{basic.name}</h3>
                   </Link>
-                  <div className="flex items-center gap-1 shrink-0">
-                    {live?.message && <Tips color="#CE282E">{live.message}</Tips>}
-                    <MiniPingChartFloat
-                      uuid={basic.uuid}
-                      hours={24}
-                      trigger={
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary">
-                          <TrendingUp className="h-4 w-4" />
-                        </Button>
-                      }
-                    />
-                    <Badge variant={online ? "default" : "destructive"} className={online ? "bg-green-600 hover:bg-green-700" : ""}>
-                      {online ? t("nodeCard.online") : t("nodeCard.offline")}
-                    </Badge>
-                  </div>
+                  {live?.message && <Tips color="#CE282E">{live.message}</Tips>}
+                  <MiniPingChartFloat
+                    uuid={basic.uuid}
+                    hours={24}
+                    trigger={
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary">
+                        <TrendingUp className="h-4 w-4" />
+                      </Button>
+                    }
+                  />
                 </div>
-                <div className="flex items-center text-[11px] text-muted-foreground/80 gap-2 mt-0.5">
-                  <span className="flex items-center gap-1.5 bg-muted/50 px-1.5 py-0.5 rounded min-w-0">
-                    <img src={getOSImage(basic.os)} alt={basic.os} className={`flex-shrink-0 w-3 h-3`} />
-                    <span className="truncate">{getOSName(basic.os)}</span>
+                <div className="flex items-center text-[11px] text-muted-foreground/80 gap-2 mt-1">
+                  <span className="flex items-center gap-1.5 bg-muted/50 px-1.5 py-0.5 rounded">
+                    <img src={getOSImage(basic.os)} alt={basic.os} className="flex-shrink-0 w-3 h-3" />
+                    <span className="whitespace-nowrap">{getOSName(basic.os)}</span>
                   </span>
                   {themeConfig.cardLayout === 'detailed' && (
                     <span className="flex items-center gap-1 px-1.5 py-0.5 bg-primary/10 rounded text-primary">
@@ -735,11 +741,16 @@ const Node = ({ basic, live, online }: NodeProps) => {
                     </span>
                   )}
                   <span className="opacity-40">•</span>
-                  <span>
-                    {formatUptime(liveData.uptime, t)}
+                  <span className="whitespace-nowrap font-mono">
+                    {formatUptimeCompact(liveData.uptime)}
                   </span>
                 </div>
               </div>
+            </div>
+            <div className="flex-shrink-0 ml-3">
+              <Badge variant={online ? "default" : "destructive"} className={online ? "bg-green-600 hover:bg-green-700" : ""}>
+                {online ? t("nodeCard.online") : t("nodeCard.offline")}
+              </Badge>
             </div>
           </div>
         )}
