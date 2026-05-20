@@ -1,13 +1,14 @@
 import React from "react";
 import Link from "next/link";
 import { useTranslation } from "react-i18next";
-import { TrendingUp, ArrowUp, ArrowDown, Activity } from "lucide-react";
+import { TrendingUp, ArrowUp, ArrowDown, Activity, ArrowUpRight } from "lucide-react";
 import type { TFunction } from "i18next";
 
 import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
 
 import type { NodeBasicInfo } from "@/contexts/NodeListContext";
 import type { LiveData, Record } from "../types/LiveData";
@@ -20,6 +21,7 @@ import { type PingHistoryPoint, type PingStats, usePingStats } from "@/hooks/use
 import Flag from "./Flag";
 import PriceTags from "./PriceTags";
 import AdaptiveChart from "./AdaptiveChart";
+import CircleChart from "./CircleChart";
 import MiniPingChartFloat from "./MiniPingChartFloat";
 import Tips from "./ui/tips";
 
@@ -233,6 +235,166 @@ function PingQualityBars({ pingStats, t }: { pingStats: PingStats; t: TFunction 
   );
 }
 
+const COMPACT_PING_BAR_COUNT = 24;
+
+function compactLatencyClass(latency: number | null) {
+  if (latency === null) return "bg-[#252b39]";
+  if (latency <= 80) return "bg-[#00b875]";
+  if (latency <= 180) return "bg-[#f3a000]";
+  return "bg-[#e64b73]";
+}
+
+function compactLossClass(loss: number | null) {
+  if (loss === null) return "bg-[#252b39]";
+  if (loss <= 1) return "bg-[#00b875]";
+  if (loss <= 5) return "bg-[#f3a000]";
+  return "bg-[#e64b73]";
+}
+
+function getNearestMetricValue(
+  history: PingHistoryPoint[],
+  index: number,
+  metric: "latency" | "loss",
+): number | null {
+  const direct = history[index]?.[metric];
+  if (typeof direct === "number") return direct;
+
+  for (let offset = 1; offset < history.length; offset++) {
+    const left = history[index - offset]?.[metric];
+    if (typeof left === "number") return left;
+
+    const right = history[index + offset]?.[metric];
+    if (typeof right === "number") return right;
+  }
+
+  return null;
+}
+
+function compactMetricBars(history: PingHistoryPoint[], metric: "latency" | "loss") {
+  const source = history.slice(-COMPACT_PING_BAR_COUNT);
+
+  if (source.length === 0) {
+    return Array.from({ length: COMPACT_PING_BAR_COUNT }, (_, index) => ({
+      key: `empty-${metric}-${index}`,
+      value: null,
+      time: "",
+    }));
+  }
+
+  return Array.from({ length: COMPACT_PING_BAR_COUNT }, (_, index) => {
+    const sourceIndex =
+      source.length === COMPACT_PING_BAR_COUNT
+        ? index
+        : Math.round((index / Math.max(COMPACT_PING_BAR_COUNT - 1, 1)) * (source.length - 1));
+    const point = source[sourceIndex];
+
+    return {
+      key: `${metric}-${point?.time ?? "point"}-${index}`,
+      value: getNearestMetricValue(source, sourceIndex, metric),
+      time: point?.time ?? "",
+    };
+  });
+}
+
+function CompactMetricBarStrip({
+  label,
+  value,
+  valueClassName,
+  points,
+  metric,
+  t,
+}: {
+  label: string;
+  value: string;
+  valueClassName?: string;
+  points: ReturnType<typeof compactMetricBars>;
+  metric: "latency" | "loss";
+  t: TFunction;
+}) {
+  return (
+    <div className="min-w-0 rounded-[6px] border border-[#222b3a]/85 bg-[#0d1320]/80 px-2 py-1.5">
+      <div className="mb-1 flex items-center justify-between gap-2 text-[10px] leading-none">
+        <span className="truncate text-[#8f98ac]">{label}</span>
+        <span className={cn("shrink-0 font-mono font-semibold text-[#cfd6e6]", valueClassName)}>
+          {value}
+        </span>
+      </div>
+      <div
+        className="grid h-[16px] gap-0.5 overflow-hidden"
+        style={{ gridTemplateColumns: `repeat(${Math.max(points.length, 1)}, minmax(0, 1fr))` }}
+      >
+        {points.map((point) => (
+          <span
+            key={point.key}
+            className={cn(
+              "min-w-0 rounded-[2px]",
+              metric === "latency"
+                ? compactLatencyClass(point.value)
+                : compactLossClass(point.value)
+            )}
+            title={
+              point.value === null
+                ? t("nodeCard.noPingData")
+                : metric === "latency"
+                  ? `${Math.round(point.value)} ms`
+                  : `${point.value.toFixed(1)}%`
+            }
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function CompactPingTimeline({ pingStats, t }: { pingStats: PingStats; t: TFunction }) {
+  if (!pingStats.hasData) {
+    return (
+      <div className="flex h-[62px] items-center justify-between text-[12px] select-none">
+        <span className="font-medium text-[#8f98ac]">Ping Stats (24h)</span>
+        <span className="text-[12px] italic text-[#848da3]">{t("nodeCard.noPingData")}</span>
+      </div>
+    );
+  }
+
+  const latencyBars = compactMetricBars(pingStats.history, "latency");
+  const lossBars = compactMetricBars(pingStats.history, "loss");
+
+  return (
+    <div className="space-y-2 select-none">
+      <div className="flex items-center justify-between gap-2 text-[12px] leading-none">
+        <span className="font-medium text-[#8f98ac]">Ping Stats (24h)</span>
+        <span className="shrink-0 font-mono text-[10px] font-semibold text-[#9aa3b7]">
+          {pingStats.avgVolatility.toFixed(1)} Vol
+        </span>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2">
+        <CompactMetricBarStrip
+          label="Latency"
+          value={`${Math.round(pingStats.avgLatency)} ms`}
+          points={latencyBars}
+          metric="latency"
+          t={t}
+        />
+        <CompactMetricBarStrip
+          label="Loss"
+          value={`${pingStats.avgLoss.toFixed(1)}%`}
+          valueClassName={cn(
+            pingStats.avgLoss > 5
+              ? "text-[#e65a7a]"
+              : pingStats.avgLoss > 1
+                ? "text-[#e7a23a]"
+                : "text-[#cfd6e6]"
+          )}
+          points={lossBars}
+          metric="loss"
+          t={t}
+        />
+      </div>
+    </div>
+  );
+}
+
 // --- Components ---
 
 interface NodeProps {
@@ -289,7 +451,7 @@ const Node = ({ basic, live, online }: NodeProps) => {
     modern: "w-full transition-all duration-200 hover:shadow-lg overflow-hidden group border-none bg-gradient-to-br from-card to-card/50 shadow-sm",
     minimal: "w-full transition-all duration-200 hover:shadow-md overflow-hidden group bg-gradient-to-br from-muted/40 to-muted/20 rounded-xl border border-border/50",
     detailed: "w-full transition-all duration-200 hover:shadow-xl overflow-hidden group border-2 shadow-md hover:border-primary/30",
-    compact: "w-full transition-all duration-200 hover:shadow-md hover:border-primary/40 overflow-hidden group border rounded-lg",
+    compact: "w-full bg-[#0c101d] border border-[#1e293b]/60 hover:border-primary/50 transition-all duration-300 overflow-hidden group rounded-[14px] shadow-lg shadow-black/25",
   };
 
   const headerStyles = {
@@ -297,7 +459,7 @@ const Node = ({ basic, live, online }: NodeProps) => {
     modern: "pb-3 pt-3 px-4 space-y-0 bg-primary/5 border-b border-primary/10",
     minimal: "pb-2 pt-4 px-4 space-y-0",
     detailed: "pb-3 pt-5 px-5 space-y-0 bg-gradient-to-r from-primary/20 via-primary/10 to-primary/20 border-b-2",
-    compact: "pb-1 pt-3 px-3 space-y-0",
+    compact: "pb-2 pt-4 px-4 space-y-0",
   };
 
   const contentStyles = {
@@ -305,7 +467,7 @@ const Node = ({ basic, live, online }: NodeProps) => {
     modern: "p-4 pt-4 bg-gradient-to-b from-background/50 to-transparent",
     minimal: "p-4 pt-3",
     detailed: "p-5 pt-4 bg-gradient-to-b from-background to-muted/10",
-    compact: "p-3 pt-2",
+    compact: "px-4 pb-4 pt-2",
   };
 
   const footerStyles = {
@@ -313,8 +475,177 @@ const Node = ({ basic, live, online }: NodeProps) => {
     modern: "pb-3 pt-0 px-4 flex justify-between items-center bg-muted/20 border-t",
     minimal: "pb-3 pt-0 px-4 flex justify-between items-center",
     detailed: "pb-4 pt-0 px-5 flex justify-between items-center bg-muted/30 border-t-2",
-    compact: "pb-2 pt-0 px-3 flex justify-between items-center",
+    compact: "px-4 pb-4 pt-0.5 flex justify-between items-center",
   };
+
+  if ((themeConfig.cardLayout as string) === 'compact') {
+    return (
+      <div
+        id={basic.uuid}
+        className="group relative flex min-h-[404px] w-full overflow-hidden rounded-[14px] border border-[#273044] bg-[linear-gradient(180deg,rgba(17,22,34,0.98),rgba(12,16,28,0.99))] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_12px_32px_rgba(0,0,0,0.34)] transition-all duration-300 hover:border-[#5e6dff]/45"
+      >
+        <div className="relative flex min-h-0 w-full flex-col">
+          {/* Header */}
+          <div className="flex min-h-[56px] justify-between items-start">
+            <div className="flex flex-1 min-w-0 items-center gap-3 overflow-hidden">
+              <div className="flex-shrink-0">
+                <Flag flag={basic.region} />
+              </div>
+              <div className="flex flex-col flex-1 min-w-0">
+                <div className="flex flex-row min-w-0 items-center">
+                  <Link
+                    href={`/instance/${basic.uuid}`}
+                    className="group-hover:text-primary transition-colors overflow-hidden flex-1"
+                  >
+                    <h3 className="font-bold truncate pr-2 tracking-tight text-base">
+                      {basic.name}
+                    </h3>
+                  </Link>
+                  <div className="flex items-center gap-1 shrink-0">
+                    {live?.message && <Tips color="#CE282E">{live.message}</Tips>}
+                    <MiniPingChartFloat
+                      uuid={basic.uuid}
+                      hours={24}
+                      trigger={
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-muted-foreground hover:text-primary"
+                        >
+                          <TrendingUp className="h-4 w-4" />
+                        </Button>
+                      }
+                    />
+                    <Badge
+                      variant={online ? "default" : "destructive"}
+                      className={online ? "bg-green-600 hover:bg-green-700" : ""}
+                    >
+                      {online ? t("nodeCard.online") : t("nodeCard.offline")}
+                    </Badge>
+                  </div>
+                </div>
+                <div className="flex items-center text-[11px] text-muted-foreground/80 gap-2 mt-0.5">
+                  <span className="flex items-center gap-1.5 bg-muted/50 px-1.5 py-0.5 rounded min-w-0">
+                    <img src={getOSImage(basic.os)} alt={basic.os} className="w-3 h-3 flex-shrink-0" />
+                    <span className="truncate">{getOSName(basic.os)}</span>
+                  </span>
+                  <span className="opacity-40">•</span>
+                  <span>{formatUptime(liveData.uptime, t)}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="-mx-4 mt-3 h-px bg-[#273044]/80" />
+          <div className="h-4" />
+
+          {/* Resources Grid */}
+          <div className="grid grid-cols-3 items-start justify-items-center gap-3">
+            <CircleChart
+              value={liveData.cpu.usage}
+              label="CPU"
+              subLabel={`${liveData.cpu.usage.toFixed(1)}%`}
+              compact
+              size={76}
+            />
+            <CircleChart
+              value={memoryUsagePercent}
+              label="RAM"
+              subLabel={formatBytes(liveData.ram.used)}
+              compact
+              size={76}
+            />
+            <CircleChart
+              value={diskUsagePercent}
+              label="Disk"
+              subLabel={formatBytes(liveData.disk.used)}
+              compact
+              size={76}
+            />
+          </div>
+
+          <div className="h-4" />
+
+          {/* Network speeds and traffic */}
+          <div className="space-y-2.5 text-[13px] select-none">
+            <div className="flex min-w-0 items-center justify-between gap-4">
+              <span className="inline-flex items-center gap-2 font-semibold text-[#a6aec1]">
+                <Activity className="h-3.5 w-3.5 text-[#8a93a8]" />
+                Net
+              </span>
+              <div className="flex min-w-0 items-center gap-4 font-mono text-[12px] font-extrabold tabular-nums">
+                <span className="whitespace-nowrap text-[#00df7c]">
+                  ↑ {uploadSpeed}/s
+                </span>
+                <span className="whitespace-nowrap text-[#5ca9ff]">
+                  ↓ {downloadSpeed}/s
+                </span>
+              </div>
+            </div>
+            <div className="flex min-w-0 items-center justify-between gap-4">
+              <span className="inline-flex items-center gap-2 font-semibold text-[#a6aec1]">
+                <Activity className="h-3.5 w-3.5 text-[#8a93a8]" />
+                Traffic
+              </span>
+              <div className="flex min-w-0 items-center gap-4 font-mono text-[12px] font-semibold text-[#aeb6c9] tabular-nums">
+                <span className="whitespace-nowrap">↑ {totalUpload}</span>
+                <span className="whitespace-nowrap">↓ {totalDownload}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="h-4" />
+
+          {/* Ping/Loss stats & quality bars */}
+          <CompactPingTimeline pingStats={pingStats} t={t} />
+
+          {basic.traffic_limit > 0 && (
+            <div className="mt-2.5 space-y-1.5 select-none">
+              <div className="flex items-center justify-between gap-2 text-[11px] leading-none text-[#9aa3b7]">
+                <span className="font-medium tracking-tight">{trafficLimitType.toUpperCase()} Limit</span>
+                <span className="shrink-0 font-mono font-semibold text-[#aeb6c9]">
+                  {formatBytes(trafficUsed)} / {formatBytes(basic.traffic_limit)}
+                </span>
+              </div>
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#202838]/85">
+                <div
+                  className={cn(
+                    "h-full rounded-full",
+                    trafficPercentage >= 90
+                      ? "bg-[#d95473]/80"
+                      : trafficPercentage >= 75
+                        ? "bg-[#d59a25]/80"
+                        : "bg-[#6572ff]/75"
+                  )}
+                  style={{ width: `${Math.min(trafficPercentage, 100)}%` }}
+                />
+              </div>
+              <div className="flex justify-end font-mono text-[10px] font-semibold leading-none text-[#9aa3b7]">
+                <span>{formatTrafficPercentage(trafficPercentage)}</span>
+              </div>
+            </div>
+          )}
+
+          <div className="mt-auto pt-2.5">
+            <div className="pt-3">
+              {(basic.price || basic.ipv4 || basic.ipv6) && (
+                <PriceTags
+                  price={basic.price}
+                  billing_cycle={basic.billing_cycle}
+                  expired_at={basic.expired_at}
+                  currency={basic.currency}
+                  tags={basic.tags}
+                  ip4={basic.ipv4}
+                  ip6={basic.ipv6}
+                  compact={true}
+                />
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <Card
@@ -323,131 +654,218 @@ const Node = ({ basic, live, online }: NodeProps) => {
     >
       {/* Header: Identity & Status */}
       <CardHeader className={headerStyles[themeConfig.cardLayout] || headerStyles.classic}>
-        <div className="flex justify-between items-start">
-          <div className="flex flex-1 min-w-0 items-center gap-3 overflow-hidden">
-            {/* Flag position changes based on layout */}
-            {themeConfig.cardLayout !== 'detailed' && (
-              <div className="flex-shrink-0">
+        {(themeConfig.cardLayout as string) === 'compact' ? (
+          <div className="flex justify-between items-center w-full">
+            <div className="flex items-center gap-2.5 min-w-0 flex-1">
+              <div className="flex-shrink-0 select-none">
                 <Flag flag={basic.region} />
               </div>
-            )}
-            <div className="flex flex-col flex-1 min-w-0">
-              <div className="flex flex-row min-w-0 items-center">
-                <Link href={`/instance/${basic.uuid}`} className="group-hover:text-primary transition-colors overflow-hidden flex-1">
-                  <h3 className={`font-bold truncate pr-2 tracking-tight ${
-                    themeConfig.cardLayout === 'detailed' ? 'text-lg' :
-                    themeConfig.cardLayout === 'compact' ? 'text-sm' : 'text-base'
-                  }`}>{basic.name}</h3>
-                </Link>
-                <div className="flex items-center gap-1 shrink-0">
-                  {live?.message && <Tips color="#CE282E">{live.message}</Tips>}
-                  <MiniPingChartFloat
-                    uuid={basic.uuid}
-                    hours={24}
-                    trigger={
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary">
-                        <TrendingUp className="h-4 w-4" />
-                      </Button>
-                    }
+              <div className="flex flex-col min-w-0 flex-1">
+                <div className="flex items-center min-w-0">
+                  <Link href={`/instance/${basic.uuid}`} className="hover:text-primary transition-colors overflow-hidden flex items-center gap-0.5 min-w-0">
+                    <span className="font-bold text-white text-[13px] tracking-tight truncate">
+                      {basic.name}
+                    </span>
+                    <ArrowUpRight className="h-3 w-3 text-slate-400 flex-shrink-0" />
+                  </Link>
+                </div>
+                <div className="flex items-center text-[10.5px] text-slate-400 gap-1.5 mt-0.5 font-medium select-none">
+                  <img
+                    src={getOSImage(basic.os)}
+                    alt={basic.os}
+                    className="w-3.5 h-3.5 flex-shrink-0"
                   />
-                  <Badge variant={online ? "default" : "destructive"} className={online ? "bg-green-600 hover:bg-green-700" : ""}>
-                    {online ? t("nodeCard.online") : t("nodeCard.offline")}
-                  </Badge>
+                  <span>{getOSName(basic.os)}</span>
+                  <span className="text-slate-600">•</span>
+                  <span>{formatUptimeCompact(liveData.uptime)}</span>
                 </div>
               </div>
-              <div className="flex items-center text-[11px] text-muted-foreground/80 gap-2 mt-0.5">
-                <span className="flex items-center gap-1.5 bg-muted/50 px-1.5 py-0.5 rounded min-w-0">
-                  <img src={getOSImage(basic.os)} alt={basic.os} className={`flex-shrink-0 ${themeConfig.cardLayout === 'compact' ? 'w-3 h-3' : 'w-3 h-3'}`} />
-                  <span className="truncate">{getOSName(basic.os)}</span>
-                </span>
-                {themeConfig.cardLayout === 'detailed' && (
-                  <span className="flex items-center gap-1 px-1.5 py-0.5 bg-primary/10 rounded text-primary">
-                    <Flag flag={basic.region} />
+            </div>
+            <div className="flex-shrink-0 ml-2">
+              <span className={cn(
+                "text-[10px] font-semibold px-1.5 py-0.5 rounded-[4px] leading-none border select-none",
+                online
+                  ? "bg-emerald-950/20 text-emerald-400 border-emerald-500/20"
+                  : "bg-rose-950/20 text-rose-400 border-rose-500/20"
+              )}>
+                {online ? t("nodeCard.online") : t("nodeCard.offline")}
+              </span>
+            </div>
+          </div>
+        ) : (
+          <div className="flex justify-between items-start">
+            <div className="flex flex-1 min-w-0 items-center gap-3 overflow-hidden">
+              {/* Flag position changes based on layout */}
+              {themeConfig.cardLayout !== 'detailed' && (
+                <div className="flex-shrink-0">
+                  <Flag flag={basic.region} />
+                </div>
+              )}
+              <div className="flex flex-col flex-1 min-w-0">
+                <div className="flex flex-row min-w-0 items-center">
+                  <Link href={`/instance/${basic.uuid}`} className="group-hover:text-primary transition-colors overflow-hidden flex-1">
+                    <h3 className={`font-bold truncate pr-2 tracking-tight ${
+                      themeConfig.cardLayout === 'detailed' ? 'text-lg' : 'text-base'
+                    }`}>{basic.name}</h3>
+                  </Link>
+                  <div className="flex items-center gap-1 shrink-0">
+                    {live?.message && <Tips color="#CE282E">{live.message}</Tips>}
+                    <MiniPingChartFloat
+                      uuid={basic.uuid}
+                      hours={24}
+                      trigger={
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary">
+                          <TrendingUp className="h-4 w-4" />
+                        </Button>
+                      }
+                    />
+                    <Badge variant={online ? "default" : "destructive"} className={online ? "bg-green-600 hover:bg-green-700" : ""}>
+                      {online ? t("nodeCard.online") : t("nodeCard.offline")}
+                    </Badge>
+                  </div>
+                </div>
+                <div className="flex items-center text-[11px] text-muted-foreground/80 gap-2 mt-0.5">
+                  <span className="flex items-center gap-1.5 bg-muted/50 px-1.5 py-0.5 rounded min-w-0">
+                    <img src={getOSImage(basic.os)} alt={basic.os} className={`flex-shrink-0 w-3 h-3`} />
+                    <span className="truncate">{getOSName(basic.os)}</span>
                   </span>
-                )}
-                <span className="opacity-40">•</span>
-                <span>
-                  {themeConfig.cardLayout === 'compact'
-                    ? formatUptimeCompact(liveData.uptime)
-                    : formatUptime(liveData.uptime, t)}
-                </span>
+                  {themeConfig.cardLayout === 'detailed' && (
+                    <span className="flex items-center gap-1 px-1.5 py-0.5 bg-primary/10 rounded text-primary">
+                      <Flag flag={basic.region} />
+                    </span>
+                  )}
+                  <span className="opacity-40">•</span>
+                  <span>
+                    {formatUptime(liveData.uptime, t)}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        )}
       </CardHeader>
 
-      {themeConfig.cardLayout !== 'minimal' && themeConfig.cardLayout !== 'compact' && <Separator className="opacity-50" />}
+      {themeConfig.cardLayout !== 'minimal' && (themeConfig.cardLayout as string) !== 'compact' && <Separator className="opacity-50" />}
 
       {/* Main Content: Metrics */}
       <CardContent className={contentStyles[themeConfig.cardLayout] || contentStyles.classic}>
-        {themeConfig.cardLayout === 'compact' ? (
-          <>
+        {(themeConfig.cardLayout as string) === 'compact' ? (
+          <div className="space-y-3.5">
             {/* Compact Metrics Row */}
-            <div className="grid grid-cols-3 gap-1 mb-2">
-              <AdaptiveChart value={liveData.cpu.usage} label="CPU" subLabel={`${liveData.cpu.usage.toFixed(0)}%`} size={52} />
-              <AdaptiveChart value={memoryUsagePercent} label="RAM" subLabel={formatBytes(liveData.ram.used)} size={52} />
-              <AdaptiveChart value={diskUsagePercent} label="Disk" subLabel={formatBytes(liveData.disk.used)} size={52} />
+            <div className="grid grid-cols-3 gap-2">
+              <AdaptiveChart value={liveData.cpu.usage} label="CPU" subLabel={`${liveData.cpu.usage.toFixed(0)}%`} size={46} />
+              <AdaptiveChart value={memoryUsagePercent} label="RAM" subLabel={formatBytes(liveData.ram.used)} size={46} />
+              <AdaptiveChart value={diskUsagePercent} label="Disk" subLabel={formatBytes(liveData.disk.used)} size={46} />
             </div>
-            {/* Compact Network */}
-            <div className="rounded-md p-2 space-y-1 text-xs bg-muted/30">
+
+            {/* Network Speed & Traffic */}
+            <div className="space-y-1.5 text-xs">
               <div className="flex justify-between items-center">
-                <span className="text-muted-foreground flex items-center gap-1">
-                  <Activity className="h-3 w-3" /> {t("nodeCard.networkSpeed")}
-                </span>
-                <div className="flex gap-2 font-mono text-[10px]">
-                  <span className="flex items-center text-green-600 dark:text-green-400">
-                    <ArrowUp className="h-3 w-3 mr-0.5" /> {uploadSpeed}/s
+                <span className="text-slate-400 font-medium">Net</span>
+                <div className="flex gap-3 font-mono text-[11px] font-semibold select-none">
+                  <span className="flex items-center text-emerald-400">
+                    ↑ {uploadSpeed}/s
                   </span>
-                  <span className="flex items-center text-blue-600 dark:text-blue-400">
-                    <ArrowDown className="h-3 w-3 mr-0.5" /> {downloadSpeed}/s
+                  <span className="flex items-center text-blue-400">
+                    ↓ {downloadSpeed}/s
                   </span>
                 </div>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-muted-foreground">{t("nodeCard.totalTraffic")}</span>
-                <div className="flex gap-2 font-mono text-[10px] text-muted-foreground">
+              <div className="flex justify-between items-center text-slate-500 font-medium">
+                <span className="text-slate-400">Traffic</span>
+                <div className="flex gap-3 font-mono text-[11px] select-none">
                   <span className="flex items-center">
-                    <ArrowUp className="h-3 w-3 mr-0.5" /> {totalUpload}
+                    ↑ {totalUpload}
                   </span>
                   <span className="flex items-center">
-                    <ArrowDown className="h-3 w-3 mr-0.5" /> {totalDownload}
+                    ↓ {totalDownload}
                   </span>
                 </div>
               </div>
-              {/* Ping - simplified */}
-              {themeConfig.cardDesign === "quality-bars" ? (
-                <PingQualityBars pingStats={pingStats} t={t} />
-              ) : (
-                <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground">{t("nodeCard.pingStats")}</span>
-                  {pingStats.hasData ? (
-                    <div className="flex gap-2 font-mono text-[10px] text-muted-foreground">
-                      <span>{pingStats.avgLoss.toFixed(1)}% {t("chart.lossRate")}</span>
-                      <span>{pingStats.avgVolatility.toFixed(1)} {t("chart.volatility")}</span>
-                    </div>
-                  ) : (
-                    <span className="text-[10px] text-muted-foreground/70 italic">{t("nodeCard.noPingData")}</span>
-                  )}
-                </div>
-              )}
-              {/* Traffic Limit */}
-              {basic.traffic_limit > 0 && (
-                <div className="pt-1">
-                  <div className="flex justify-between text-[9px] mb-0.5 text-muted-foreground">
-                    <span>{trafficLimitType.toUpperCase()} Limit</span>
-                    <span className="font-mono">{formatBytes(trafficUsed)} / {formatBytes(basic.traffic_limit)}</span>
-                  </div>
-                  <div className="h-1 w-full bg-secondary rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-primary/70 rounded-full"
-                      style={{ width: `${Math.min(trafficPercentage, 100)}%` }}
-                    />
-                  </div>
-                </div>
-              )}
             </div>
-          </>
+
+            {/* Ping stats & Single Quality Strip */}
+            {pingStats.hasData ? (
+              <div className="space-y-1.5">
+                <div className="flex justify-between items-center text-xs select-none">
+                  <div>
+                    <span className="text-slate-400 font-medium">Ping</span>
+                    <span className="font-mono text-white font-semibold ml-1">{Math.round(pingStats.avgLatency)} ms</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 font-medium">Loss</span>
+                    <span className={cn(
+                      "font-mono font-semibold ml-1",
+                      pingStats.avgLoss > 5 ? "text-rose-400" : pingStats.avgLoss > 1 ? "text-amber-400" : "text-slate-300"
+                    )}>
+                      {pingStats.avgLoss.toFixed(1)}%
+                    </span>
+                  </div>
+                </div>
+                <div
+                  className="grid h-2.5 gap-[1.5px] select-none"
+                  style={{ gridTemplateColumns: `repeat(${pingStats.history.length || 28}, minmax(0, 1fr))` }}
+                >
+                  {(pingStats.history.length > 0 ? pingStats.history : Array.from({ length: 28 }, (_, i) => ({ time: new Date().toISOString(), latency: null, loss: null }))).map((point, index) => {
+                    const latency = point.latency;
+
+                    let barColor = "bg-[#1e293b]/70"; // default grey for no data
+                    if (point.loss !== null || point.latency !== null) {
+                      if (point.loss !== null && point.loss > 5) {
+                        barColor = "bg-rose-500";
+                      } else if (point.loss !== null && point.loss > 1) {
+                        barColor = "bg-amber-500";
+                      } else if (latency !== null) {
+                        if (latency > 180) {
+                          barColor = "bg-rose-500";
+                        } else if (latency > 80) {
+                          barColor = "bg-amber-500";
+                        } else {
+                          barColor = "bg-emerald-500";
+                        }
+                      } else {
+                        barColor = "bg-emerald-500";
+                      }
+                    }
+
+                    const titleValue =
+                      point.latency === null
+                        ? "No data"
+                        : `${Math.round(point.latency)} ms, Loss: ${point.loss?.toFixed(1)}%`;
+
+                    return (
+                      <span
+                        key={`${point.time}-${index}`}
+                        className={cn("min-w-0 h-full rounded-[1px] transition-colors", barColor)}
+                        title={titleValue}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+            ) : (
+              <div className="flex justify-between items-center text-xs select-none">
+                <span className="text-slate-400 font-medium">Ping</span>
+                <span className="text-[10px] text-slate-500 italic">{t("nodeCard.noPingData")}</span>
+              </div>
+            )}
+
+            {/* Traffic Limit (if configured) */}
+            {basic.traffic_limit > 0 && (
+              <div className="pt-0.5 select-none">
+                <div className="flex justify-between text-[9px] mb-1 text-slate-400 font-medium">
+                  <span>{trafficLimitType.toUpperCase()} Limit</span>
+                  <span className="font-mono text-slate-300">{formatBytes(trafficUsed)} / {formatBytes(basic.traffic_limit)}</span>
+                </div>
+                <div className="h-1 w-full bg-[#1e293b]/60 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-primary/70 rounded-full"
+                    style={{ width: `${Math.min(trafficPercentage, 100)}%` }}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
         ) : (
           <>
             {/* Charts Grid - layout affects arrangement */}
@@ -567,7 +985,7 @@ const Node = ({ basic, live, online }: NodeProps) => {
               tags={basic.tags}
               ip4={basic.ipv4}
               ip6={basic.ipv6}
-              compact={themeConfig.cardLayout === 'compact'}
+              compact={(themeConfig.cardLayout as string) === 'compact'}
            />
         </CardFooter>
       )}
@@ -603,14 +1021,14 @@ export const NodeGrid = ({ nodes, liveData }: NodeGridProps) => {
     return a.weight - b.weight;
   });
 
-  const isCompact = themeConfig.cardLayout === 'compact';
+  const isCompact = (themeConfig.cardLayout as string) === 'compact';
 
   return (
     <div
       className={`grid box-border w-full ${isCompact ? 'gap-4 py-3' : 'gap-6 py-4'}`}
       style={{
         gridTemplateColumns: isCompact
-          ? "repeat(auto-fill, minmax(220px, 1fr))"
+          ? "repeat(auto-fill, minmax(284px, 1fr))"
           : "repeat(auto-fill, minmax(320px, 1fr))",
       }}
     >

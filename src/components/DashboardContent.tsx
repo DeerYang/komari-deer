@@ -293,7 +293,7 @@ export default function DashboardContent() {
           themeConfig.cardLayout === 'modern' ? 'grid-cols-1 gap-3 md:grid-cols-2 md:auto-rows-[96px] xl:grid-cols-3' :
           themeConfig.cardLayout === 'minimal' ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3' :
           themeConfig.cardLayout === 'detailed' ? 'grid-cols-1 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4' :
-          themeConfig.cardLayout === 'compact' ? 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2' :
+          themeConfig.cardLayout === 'compact' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4' :
           'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4'
         }`}>
           {statusCards
