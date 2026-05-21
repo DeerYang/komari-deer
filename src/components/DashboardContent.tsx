@@ -100,16 +100,16 @@ const SpeedStatusValue = ({
   upBytes: number;
   downBytes: number;
 }) => {
-  const gaugeMetric = getDashboardSpeedGaugeMetric(Math.max(upBytes, downBytes));
-
   return (
-    <div className="ds-metric-speed-panel" title={`↑ ${up} / ↓ ${down}`}>
-      <DashboardGauge
-        value={gaugeMetric.value}
-        max={Math.max(10, gaugeMetric.value * 1.3)}
-        label={gaugeMetric.unit}
-      />
-      <div className="ds-metric-speed-dual is-compact" title={`↑ ${up} / ↓ ${down}`} />
+    <div className="flex flex-col gap-1">
+      <div className="flex items-center gap-1.5 text-base font-bold">
+        <span className="text-green-400">↑</span>
+        <span className="text-white">{up}/s</span>
+      </div>
+      <div className="flex items-center gap-1.5 text-base font-bold">
+        <span className="text-blue-400">↓</span>
+        <span className="text-white">{down}/s</span>
+      </div>
     </div>
   );
 };
@@ -149,20 +149,16 @@ export default function DashboardContent() {
   const displayedNodeList = useStableValueWhile(isEarthGlobeOpen, nodeList);
 
   const renderTrafficPair = (up: string, down: string) => {
-    if (themeConfig.cardLayout === "modern") {
-      return (
-        <div className="flex items-center gap-2 whitespace-nowrap">
-          <span>↑ {up}</span>
-          <span className="text-muted-foreground">/</span>
-          <span>↓ {down}</span>
-        </div>
-      );
-    }
-
     return (
-      <div className="flex flex-col">
-        <div>↑ {up}</div>
-        <div>↓ {down}</div>
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center gap-1.5 text-base font-bold">
+          <span className="text-green-400">↑</span>
+          <span className="text-white">{up}</span>
+        </div>
+        <div className="flex items-center gap-1.5 text-base font-bold">
+          <span className="text-blue-400">↓</span>
+          <span className="text-white">{down}</span>
+        </div>
       </div>
     );
   };
@@ -174,14 +170,14 @@ export default function DashboardContent() {
     {
       key: "currentTime",
       title: t("current_time"),
-      icon: <Clock className="h-4 w-4 text-muted-foreground" />,
+      icon: <Clock className="h-4 w-4" />,
       renderValue: () => <CurrentTimeCard />,
       visible: statusCardsVisibility.currentTime,
     },
     {
       key: "currentOnline",
       title: t("current_online"),
-      icon: <Activity className="h-4 w-4 text-muted-foreground" />,
+      icon: <Activity className="h-4 w-4" />,
       getValue: () =>
         `${displayedLiveData?.data?.online.length ?? 0} / ${displayedNodeList?.length ?? 0}`,
       visible: statusCardsVisibility.currentOnline,
@@ -189,7 +185,7 @@ export default function DashboardContent() {
     {
       key: "regionOverview",
       title: t("region_overview"),
-      icon: <Globe className="h-4 w-4 text-muted-foreground" />,
+      icon: <Globe className="h-4 w-4" />,
       getValue: () =>
         displayedNodeList
           ? Object.entries(
@@ -206,7 +202,7 @@ export default function DashboardContent() {
     {
       key: "trafficOverview",
       title: t("traffic_overview"),
-      icon: <ArrowUpRight className="h-4 w-4 text-muted-foreground" />,
+      icon: <ArrowUpRight className="h-4 w-4" />,
       renderValue: () => {
         const data = displayedLiveData?.data?.data;
         const online = displayedLiveData?.data?.online;
@@ -230,15 +226,12 @@ export default function DashboardContent() {
     {
       key: "networkSpeed",
       title: t("network_speed"),
-      icon: <Zap className="h-4 w-4 text-muted-foreground" />,
-      structuredValue: themeConfig.statusDesign === "speed",
+      icon: <Zap className="h-4 w-4" />,
       renderValue: () => {
         const data = displayedLiveData?.data?.data;
         const online = displayedLiveData?.data?.online;
         if (!data || !online) {
-          return themeConfig.statusDesign === "speed"
-            ? renderSpeedStatusValue({ up: 0, down: 0 })
-            : renderTrafficPair("0 B/s", "0 B/s");
+          return renderSpeedStatusValue({ up: 0, down: 0 });
         }
         const onlineSet = new Set(online);
         const values = Object.entries(data)
@@ -252,11 +245,7 @@ export default function DashboardContent() {
           (acc, node) => acc + (node.network.down || 0),
           0
         );
-        const upText = formatSpeed(up);
-        const downText = formatSpeed(down);
-        return themeConfig.statusDesign === "speed"
-          ? renderSpeedStatusValue({ up, down })
-          : renderTrafficPair(upText, downText);
+        return renderSpeedStatusValue({ up, down });
       },
       visible: statusCardsVisibility.networkSpeed,
     },
@@ -346,197 +335,40 @@ const TopCard: React.FC<TopCardProps> = ({
   layout = 'classic',
   structuredValue = false,
 }) => {
-  const mobileStructuredValueClass = "h-6 w-[5.75rem] shrink-0 overflow-hidden";
+  // Universal modern design - works for all layouts
+  return (
+    <div className="group relative overflow-hidden rounded-2xl border border-white/[0.08] bg-gradient-to-br from-white/[0.07] to-white/[0.02] backdrop-blur-xl transition-all duration-500 hover:border-white/[0.15] hover:shadow-[0_8px_32px_rgba(94,109,255,0.15)] hover:scale-[1.02]">
+      {/* Animated gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.03] via-transparent to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
 
-  // Compact layout: Ultra-dense status card
-  if (layout === 'compact') {
-    return (
-      <Card className="overflow-hidden border shadow-sm bg-card hover:shadow-md transition-shadow duration-200">
-        <div className="p-2">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-1.5 min-w-0 flex-1">
-              <div className="scale-90">{icon}</div>
-              <div className="text-[10px] font-medium text-muted-foreground whitespace-nowrap truncate">
-                {title}
-              </div>
-            </div>
-            <div className={structuredValue ? "min-w-0" : "text-xs font-bold shrink-0 leading-tight"}>
-              {value}
-            </div>
-          </div>
-          {description && (
-            <p className="text-[10px] text-muted-foreground mt-0.5 truncate">
-              {description}
-            </p>
-          )}
-        </div>
-      </Card>
-    );
-  }
+      {/* Glow effect on hover */}
+      <div className="absolute -inset-[1px] rounded-2xl bg-gradient-to-br from-primary/20 via-primary/5 to-transparent opacity-0 blur-xl transition-opacity duration-500 group-hover:opacity-100" />
 
-  // Classic layout: Traditional card with icon on right
-  if (layout === 'classic') {
-    return (
-      <Card className="overflow-hidden border shadow-sm bg-card hover:shadow-md transition-shadow duration-200">
-        {/* Mobile: single line layout */}
-        <CardContent className="p-3 sm:hidden">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 min-w-0 flex-1">
-              {icon}
-              <div className="text-xs font-medium text-muted-foreground whitespace-nowrap">
-                {title}
-              </div>
-            </div>
-            <div className={structuredValue ? mobileStructuredValueClass : "text-xs font-bold shrink-0 leading-tight"}>
-              {value}
-            </div>
-          </div>
-        </CardContent>
-        {/* Desktop: original layout */}
-        <div className="hidden sm:block">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs font-medium text-muted-foreground">
-              {title}
-            </CardTitle>
-            {icon}
-          </CardHeader>
-          <CardContent>
-            <div className={structuredValue ? "min-w-0" : "text-xl font-bold line-clamp-2"}>{value}</div>
-            {description && (
-              <p className="text-xs text-muted-foreground mt-1">
-                {description}
-              </p>
-            )}
-          </CardContent>
-        </div>
-      </Card>
-    );
-  }
-
-  // Modern layout: Horizontal with icon on left
-  if (layout === 'modern') {
-    return (
-      <Card className="h-full overflow-hidden border-none shadow-sm bg-gradient-to-br from-card to-card/50 hover:shadow-md transition-all duration-200">
-        {/* Mobile: compact single line */}
-        <CardContent className="p-3 md:hidden">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 min-w-0 flex-1">
-              <div className="text-primary">{icon}</div>
-              <div className="text-xs font-semibold text-muted-foreground whitespace-nowrap">
-                {title}
-              </div>
-            </div>
-            <div className={structuredValue ? mobileStructuredValueClass : "text-xs font-bold shrink-0 leading-tight"}>
-              {value}
-            </div>
-          </div>
-        </CardContent>
-        {/* Desktop: original layout */}
-        <CardContent className="p-0 h-full hidden md:block">
-          <div className="flex h-full">
-            <div className="w-12 bg-primary/10 flex flex-col items-center justify-center gap-2 border-r border-primary/20">
-              <div className="text-primary">
-                {icon}
-              </div>
-            </div>
-            <div className="flex-1 p-2.5 flex flex-col justify-center min-w-0">
-              <div className="text-[9px] font-semibold text-primary uppercase tracking-wider mb-0.5">
-                {title}
-              </div>
-              <div className={structuredValue ? "min-w-0" : "text-lg font-bold leading-tight line-clamp-2 [&>div]:space-y-0.5"}>{value}</div>
-              {description && (
-                <div className="mt-0.5 text-xs text-muted-foreground">
-                  {description}
-                </div>
-              )}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  // Minimal layout: Borderless, clean design
-  if (layout === 'minimal') {
-    return (
-      <div className="relative rounded-xl bg-gradient-to-br from-muted/40 to-muted/20 hover:from-muted/50 hover:to-muted/30 transition-all duration-200 backdrop-blur-sm border border-border/50">
-        {/* Mobile: compact single line */}
-        <div className="p-3 sm:hidden">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 min-w-0 flex-1">
-              <div className="opacity-50 scale-90">{icon}</div>
-              <div className="text-xs font-bold text-muted-foreground uppercase tracking-wide whitespace-nowrap">
-                {title}
-              </div>
-            </div>
-            <div className={structuredValue ? mobileStructuredValueClass : "text-xs font-black bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent shrink-0 leading-tight"}>
-              {value}
-            </div>
-          </div>
-        </div>
-        {/* Desktop: original layout */}
-        <div className="p-4 hidden sm:block">
-          <div className="absolute top-2.5 right-2.5 opacity-30 scale-75">
+      <div className="relative p-5">
+        {/* Header with icon and title */}
+        <div className="mb-3 flex items-center gap-2.5">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 text-primary shadow-lg shadow-primary/10 transition-all duration-300 group-hover:scale-110 group-hover:shadow-primary/20">
             {icon}
           </div>
-          <div className={structuredValue ? "mb-2 min-w-0 pr-8" : "text-2xl font-black mb-1.5 bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent line-clamp-2 pr-8"}>
-            {value}
-          </div>
-          <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+          <span className="text-sm font-bold uppercase tracking-wider text-white/50 transition-colors duration-300 group-hover:text-primary/80">
             {title}
-          </div>
-          {description && (
-            <div className="text-xs text-muted-foreground/70 mt-1 italic">
-              {description}
-            </div>
-          )}
+          </span>
         </div>
+
+        {/* Value display */}
+        <div className={structuredValue ? "min-w-0" : "text-3xl font-black tracking-tight text-white transition-all duration-300 group-hover:text-white group-hover:drop-shadow-[0_0_20px_rgba(255,255,255,0.3)]"}>
+          {value}
+        </div>
+
+        {description && (
+          <p className="mt-2 text-xs text-white/40">
+            {description}
+          </p>
+        )}
       </div>
-    );
-  }
 
-  // Detailed layout: Icon on top, centered
-  if (layout === 'detailed') {
-    return (
-      <Card className="overflow-hidden border-2 shadow-md bg-card hover:shadow-xl hover:border-primary/30 transition-all duration-200">
-        {/* Mobile: compact single line */}
-        <CardContent className="p-3 sm:hidden">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 min-w-0 flex-1">
-              <div className="text-primary">{icon}</div>
-              <div className="text-xs font-bold text-muted-foreground uppercase tracking-wide whitespace-nowrap">
-                {title}
-              </div>
-            </div>
-            <div className={structuredValue ? mobileStructuredValueClass : "text-xs font-extrabold shrink-0 leading-tight"}>
-              {value}
-            </div>
-          </div>
-        </CardContent>
-        {/* Desktop: original layout */}
-        <CardContent className="p-0 hidden sm:block">
-          <div className="bg-gradient-to-r from-primary/20 via-primary/10 to-primary/20 p-3 pb-2 text-center border-b">
-            <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-background shadow-lg mb-2 border-2 border-primary/20">
-              <div className="text-primary scale-110">
-                {icon}
-              </div>
-            </div>
-            <h3 className="text-[10px] font-bold text-foreground uppercase tracking-wide">
-              {title}
-            </h3>
-          </div>
-          <div className="p-4 text-center bg-gradient-to-b from-background to-muted/20">
-            <div className={structuredValue ? "mb-1 min-w-0" : "text-2xl font-extrabold mb-1 tracking-tight line-clamp-2"}>{value}</div>
-            {description && (
-              <div className="text-xs text-muted-foreground font-medium">
-                {description}
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  return null;
+      {/* Bottom accent line */}
+      <div className="absolute bottom-0 left-0 h-[2px] w-0 bg-gradient-to-r from-primary via-primary/50 to-transparent transition-all duration-500 group-hover:w-full" />
+    </div>
+  );
 };
