@@ -486,20 +486,30 @@ const Node = ({ basic, live, online }: NodeProps) => {
       >
         {/* Offline overlay with red dot and text */}
         {!online && (
-          <div className="absolute inset-0 z-10 bg-black/60 backdrop-blur-sm flex items-center justify-center">
-            <div
-              className="absolute inset-0 opacity-10"
-              style={{
-                backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 15px, rgba(255,255,255,0.05) 15px, rgba(255,255,255,0.05) 30px)'
-              }}
-            />
-            <div className="relative z-20 flex items-center gap-1.5 px-3 py-2 rounded-full bg-red-500/20 border border-red-500/40 backdrop-blur-md">
-              <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-              <span className="text-red-400 font-semibold text-sm tracking-wide">
+          <>
+            {/* Full overlay - hidden on hover */}
+            <div className="absolute inset-0 z-10 bg-black/60 backdrop-blur-sm flex items-center justify-center group-hover:opacity-0 group-hover:pointer-events-none transition-opacity duration-300">
+              <div
+                className="absolute inset-0 opacity-10"
+                style={{
+                  backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 15px, rgba(255,255,255,0.05) 15px, rgba(255,255,255,0.05) 30px)'
+                }}
+              />
+              <div className="relative z-20 flex items-center gap-1.5 px-3 py-2 rounded-full bg-red-500/20 border border-red-500/40 backdrop-blur-md">
+                <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                <span className="text-red-400 font-semibold text-sm tracking-wide">
+                  {t("nodeCard.offline")}
+                </span>
+              </div>
+            </div>
+            {/* Small badge - shown on hover in top-right */}
+            <div className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-red-500/20 border border-red-500/40 backdrop-blur-md">
+              <div className="w-0.5 h-0.5 rounded-full bg-red-500 animate-pulse" />
+              <span className="text-red-400 font-semibold text-[9px] tracking-wide leading-none">
                 {t("nodeCard.offline")}
               </span>
             </div>
-          </div>
+          </>
         )}
         <div className="relative flex min-h-0 w-full flex-col">
           {/* Header */}
@@ -671,20 +681,30 @@ const Node = ({ basic, live, online }: NodeProps) => {
     >
       {/* Offline overlay with red dot and text */}
       {!online && (
-        <div className="absolute inset-0 z-10 bg-black/60 backdrop-blur-sm flex items-center justify-center rounded-lg">
-          <div
-            className="absolute inset-0 opacity-10 rounded-lg"
-            style={{
-              backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 15px, rgba(255,255,255,0.05) 15px, rgba(255,255,255,0.05) 30px)'
-            }}
-          />
-          <div className="relative z-20 flex items-center gap-1.5 px-3 py-2 rounded-full bg-red-500/20 border border-red-500/40 backdrop-blur-md">
-            <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-            <span className="text-red-400 font-semibold text-sm tracking-wide">
+        <>
+          {/* Full overlay - hidden on hover */}
+          <div className="absolute inset-0 z-10 bg-black/60 backdrop-blur-sm flex items-center justify-center rounded-lg group-hover:opacity-0 group-hover:pointer-events-none transition-opacity duration-300">
+            <div
+              className="absolute inset-0 opacity-10 rounded-lg"
+              style={{
+                backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 15px, rgba(255,255,255,0.05) 15px, rgba(255,255,255,0.05) 30px)'
+              }}
+            />
+            <div className="relative z-20 flex items-center gap-1.5 px-3 py-2 rounded-full bg-red-500/20 border border-red-500/40 backdrop-blur-md">
+              <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+              <span className="text-red-400 font-semibold text-sm tracking-wide">
+                {t("nodeCard.offline")}
+              </span>
+            </div>
+          </div>
+          {/* Small badge - shown on hover in top-right */}
+          <div className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-red-500/20 border border-red-500/40 backdrop-blur-md">
+            <div className="w-0.5 h-0.5 rounded-full bg-red-500 animate-pulse" />
+            <span className="text-red-400 font-semibold text-[9px] tracking-wide leading-none">
               {t("nodeCard.offline")}
             </span>
           </div>
-        </div>
+        </>
       )}
 
       {/* Header: Identity & Status */}
