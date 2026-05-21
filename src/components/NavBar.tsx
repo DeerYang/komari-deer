@@ -2,8 +2,6 @@
 
 import LanguageSwitch from "./Language";
 import LoginDialog from "./Login";
-import ThemeSwitcher from "./ThemeSwitcher";
-import DarkModeToggle from "./DarkModeToggle";
 import Link from "next/link";
 import { Calculator } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -32,8 +30,6 @@ const NavBar = () => {
 
         {/* Actions */}
         <div className="flex items-center gap-2">
-          <DarkModeToggle />
-          <ThemeSwitcher />
           <Button
             type="button"
             variant="ghost"

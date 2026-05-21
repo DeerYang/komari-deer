@@ -11,7 +11,6 @@ import { formatBytes } from "@/utils/unitHelper";
 import { useLiveData } from "@/contexts/LiveDataContext";
 import { useNodeList } from "@/contexts/NodeListContext";
 import { usePublicInfo } from "@/contexts/PublicInfoContext";
-import { useTheme, type CardLayout } from "@/contexts/ThemeContext";
 import Loading from "@/components/loading";
 import { CurrentTimeCard } from "@/components/CurrentTimeCard";
 import { Callouts } from "@/components/DashboardCallouts";
@@ -134,7 +133,6 @@ export default function DashboardContent() {
   const isEarthGlobeOpen = useEarthGlobeOpen();
   const { live_data } = useLiveData();
   const { publicInfo } = usePublicInfo();
-  const { themeConfig } = useTheme();
   
   // Sync document title with backend-set custom title
   useEffect(() => {
@@ -277,14 +275,7 @@ export default function DashboardContent() {
           <h2 className="text-2xl font-bold tracking-tight">{t("common.dashboard", { defaultValue: "Dashboard" })}</h2>
         </div>
 
-        <div className={`grid ${
-          themeConfig.cardLayout === 'classic' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4' :
-          themeConfig.cardLayout === 'modern' ? 'grid-cols-1 gap-3 md:grid-cols-2 md:auto-rows-[96px] xl:grid-cols-3' :
-          themeConfig.cardLayout === 'minimal' ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3' :
-          themeConfig.cardLayout === 'detailed' ? 'grid-cols-1 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4' :
-          themeConfig.cardLayout === 'compact' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4' :
-          'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4'
-        }`}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
           {statusCards
             .filter((card) => card.visible)
             .map((card) => (
@@ -293,8 +284,6 @@ export default function DashboardContent() {
                 title={card.title}
                 value={card.renderValue ? card.renderValue() : card.getValue?.()}
                 icon={card.icon}
-                layout={themeConfig.cardLayout}
-                structuredValue={card.structuredValue}
               />
             ))}
         </div>
@@ -323,8 +312,6 @@ type TopCardProps = {
   value: string | number | React.ReactNode;
   description?: string;
   icon?: React.ReactNode;
-  layout?: CardLayout;
-  structuredValue?: boolean;
 };
 
 const TopCard: React.FC<TopCardProps> = ({
@@ -332,8 +319,6 @@ const TopCard: React.FC<TopCardProps> = ({
   value,
   description,
   icon,
-  layout = 'classic',
-  structuredValue = false,
 }) => {
   // Universal modern design - works for all layouts
   return (
@@ -356,7 +341,7 @@ const TopCard: React.FC<TopCardProps> = ({
         </div>
 
         {/* Value display */}
-        <div className={structuredValue ? "min-w-0" : "text-3xl font-black tracking-tight text-white transition-all duration-300 group-hover:text-white group-hover:drop-shadow-[0_0_20px_rgba(255,255,255,0.3)]"}>
+        <div className="text-3xl font-black tracking-tight text-white transition-all duration-300 group-hover:text-white group-hover:drop-shadow-[0_0_20px_rgba(255,255,255,0.3)]">
           {value}
         </div>
 

@@ -99,42 +99,20 @@ const LANGUAGE_STORAGE_KEY = "komari-language";
 const I18NEXT_STORAGE_KEY = "i18nextLng";
 const LOCAL_OVERRIDE_BASE_SIGNATURE_KEY = "komari-theme-local-override-base";
 
-const COLOR_THEMES: ColorTheme[] = ["default", "ocean", "sunset", "forest", "midnight", "rose"];
-const CARD_LAYOUTS: CardLayout[] = ["classic", "modern", "minimal", "detailed", "compact"];
-const CARD_DESIGNS: CardDesign[] = ["default", "quality-bars"];
-const STATUS_DESIGNS: StatusDesign[] = ["default", "speed"];
-const GRAPH_DESIGNS: GraphDesign[] = ["circle", "progress", "bar", "minimal"];
+const COLOR_THEMES: ColorTheme[] = ["midnight"];
+const CARD_LAYOUTS: CardLayout[] = ["compact"];
+const CARD_DESIGNS: CardDesign[] = ["quality-bars"];
+const STATUS_DESIGNS: StatusDesign[] = ["speed"];
+const GRAPH_DESIGNS: GraphDesign[] = ["circle"];
 const NODE_VIEW_MODES: NodeViewMode[] = ["grid", "table"];
-const APPEARANCES: Appearance[] = ["light", "dark", "system"];
+const APPEARANCES: Appearance[] = ["dark"];
 const BACKGROUND_BLUR_TYPES: BackgroundBlurType[] = ["soft", "glass"];
-const CARD_BLUR_STYLE_PROPERTIES = {
-  filter: "--komari-card-backdrop-filter",
-  backgroundAlpha: "--komari-card-background-alpha",
-  borderAlpha: "--komari-card-border-alpha",
-  glassStartAlpha: "--komari-card-glass-start-alpha",
-  glassMiddleAlpha: "--komari-card-glass-middle-alpha",
-  glassEndAlpha: "--komari-card-glass-end-alpha",
-  glassHighlightMix: "--komari-card-glass-highlight-mix",
-  glassDarkHighlightMix: "--komari-card-glass-dark-highlight-mix",
-  glassBorderWhiteMix: "--komari-card-glass-border-white-mix",
-  glassDarkBorderWhiteMix: "--komari-card-glass-dark-border-white-mix",
-  glassOutlineAlpha: "--komari-card-glass-outline-alpha",
-  glassDarkOutlineAlpha: "--komari-card-glass-dark-outline-alpha",
-  glassShadowAlpha: "--komari-card-glass-shadow-alpha",
-  glassSecondaryShadowAlpha: "--komari-card-glass-secondary-shadow-alpha",
-  glassDarkShadowAlpha: "--komari-card-glass-dark-shadow-alpha",
-  glassDarkSecondaryShadowAlpha: "--komari-card-glass-dark-secondary-shadow-alpha",
-  glassInnerHighlightAlpha: "--komari-card-glass-inner-highlight-alpha",
-  glassDarkInnerHighlightAlpha: "--komari-card-glass-dark-inner-highlight-alpha",
-  glassInnerLowlightAlpha: "--komari-card-glass-inner-lowlight-alpha",
-  glassDarkInnerLowlightAlpha: "--komari-card-glass-dark-inner-lowlight-alpha",
-} as const;
 
 const DEFAULT_THEME_CONFIG: ThemeConfig = {
-  colorTheme: "default",
-  cardLayout: "classic",
-  cardDesign: "default",
-  statusDesign: "default",
+  colorTheme: "midnight",
+  cardLayout: "compact",
+  cardDesign: "quality-bars",
+  statusDesign: "speed",
   graphDesign: "circle",
   backgroundImageUrl: "",
   backgroundBlurEnabled: false,
@@ -255,28 +233,12 @@ function pickEnum<T extends string>(value: unknown, allowed: readonly T[]): T | 
   return typeof value === "string" && allowed.includes(value as T) ? (value as T) : undefined;
 }
 
-function pickAppearance(value: unknown): Appearance | undefined {
-  return pickEnum(value, APPEARANCES);
-}
-
-function pickManagedLanguage(value: unknown): string | undefined {
-  if (typeof value !== "string" || value === "auto") {
-    return undefined;
-  }
-
-  return normalizeLanguage(value);
-}
-
 function pickString(value: unknown): string | undefined {
-  return typeof value === "string" ? value : undefined;
+  return typeof value === "string" ? value.trim() : undefined;
 }
 
 function pickBoolean(value: unknown): boolean | undefined {
   return typeof value === "boolean" ? value : undefined;
-}
-
-function pickBlurType(value: unknown): BackgroundBlurType | undefined {
-  return pickEnum(value, BACKGROUND_BLUR_TYPES);
 }
 
 function pickNumber(value: unknown): number | undefined {
@@ -290,128 +252,24 @@ function pickNumber(value: unknown): number | undefined {
   return Number.isFinite(numberValue) ? numberValue : undefined;
 }
 
-function clampBackgroundBlurIntensity(value: number): number {
+function pickAppearance(value: unknown): Appearance | undefined {
+  return pickEnum(value, APPEARANCES);
+}
+
+function pickBlurType(value: unknown): BackgroundBlurType | undefined {
+  return pickEnum(value, BACKGROUND_BLUR_TYPES);
+}
+
+function pickManagedLanguage(value: unknown): string | undefined {
+  if (typeof value !== "string" || value === "auto") {
+    return undefined;
+  }
+
+  return normalizeLanguage(value);
+}
+
+function clampThemeIntensity(value: number): number {
   return Math.min(100, Math.max(0, Math.round(value)));
-}
-
-function cssPercent(value: number): string {
-  return `${Math.round(value)}%`;
-}
-
-function cssAlpha(value: number): string {
-  return Number(value.toFixed(3)).toString();
-}
-
-function cssString(value: string): string {
-  return value
-    .replace(/\\/g, "\\\\")
-    .replace(/"/g, "\\\"")
-    .replace(/\n/g, "\\A ")
-    .replace(/\r/g, "\\D ")
-    .replace(/\f/g, "\\C ");
-}
-
-function getBackgroundBlurPresentation(
-  type: BackgroundBlurType,
-  intensity: number,
-  enabled: boolean
-) {
-  if (!enabled || intensity <= 0) {
-    return {
-      filter: "none",
-      bleed: "0px",
-    };
-  }
-
-  const normalized = clampBackgroundBlurIntensity(intensity);
-  const blur = (multiplier: number) => Number((normalized * multiplier).toFixed(1));
-  const amount = normalized / 100;
-
-  const filterByType: Record<BackgroundBlurType, string> = {
-    soft: `blur(${blur(0.1)}px) saturate(${(1 + amount * 0.04).toFixed(2)})`,
-    glass: `blur(${blur(0.42)}px) saturate(${(1 + amount * 1.1).toFixed(2)}) brightness(${(1 + amount * 0.12).toFixed(2)}) contrast(${(1 - amount * 0.1).toFixed(2)})`,
-  };
-
-  return {
-    filter: filterByType[type],
-    bleed: `${Math.ceil(normalized * 0.28)}px`,
-  };
-}
-
-function getCardBlurPresentation(
-  type: CardBlurType,
-  transparentIntensity: number,
-  extraBlurIntensity: number,
-  enabled: boolean
-) {
-  if (!enabled) {
-    return {
-      filter: "none",
-      backgroundAlpha: "100%",
-      borderAlpha: "100%",
-      glassStartAlpha: "100%",
-      glassMiddleAlpha: "100%",
-      glassEndAlpha: "100%",
-      glassHighlightMix: "0%",
-      glassDarkHighlightMix: "0%",
-      glassBorderWhiteMix: "0%",
-      glassDarkBorderWhiteMix: "0%",
-      glassOutlineAlpha: "0",
-      glassDarkOutlineAlpha: "0",
-      glassShadowAlpha: "0",
-      glassSecondaryShadowAlpha: "0",
-      glassDarkShadowAlpha: "0",
-      glassDarkSecondaryShadowAlpha: "0",
-      glassInnerHighlightAlpha: "0",
-      glassDarkInnerHighlightAlpha: "0",
-      glassInnerLowlightAlpha: "0",
-      glassDarkInnerLowlightAlpha: "0",
-    };
-  }
-
-  const transparentNormalized = clampBackgroundBlurIntensity(transparentIntensity);
-  const extraBlurNormalized = clampBackgroundBlurIntensity(extraBlurIntensity);
-  const blur = (multiplier: number) => Number((extraBlurNormalized * multiplier).toFixed(1));
-  const transparentAmount = transparentNormalized / 100;
-  const extraBlurAmount = extraBlurNormalized / 100;
-
-  const filterByType: Record<CardBlurType, string> = {
-    soft: `blur(${blur(0.08)}px) saturate(${(1 + extraBlurAmount * 0.06).toFixed(2)})`,
-    glass: `blur(${blur(0.42)}px) saturate(${(1 + extraBlurAmount * 1.15).toFixed(2)}) brightness(${(1 + extraBlurAmount * 0.12).toFixed(2)}) contrast(${(1 - extraBlurAmount * 0.1).toFixed(2)})`,
-  };
-
-  const backgroundAlphaByType: Record<CardBlurType, number> = {
-    soft: 100 - transparentAmount * 100,
-    glass: 72 - transparentAmount * 36,
-  };
-
-  const borderAlphaByType: Record<CardBlurType, number> = {
-    soft: 90 - transparentAmount * 60,
-    glass: 80 + transparentAmount * 20,
-  };
-
-  return {
-    filter: extraBlurNormalized > 0 ? filterByType[type] : "none",
-    backgroundAlpha: `${Math.round(backgroundAlphaByType[type])}%`,
-    borderAlpha: `${Math.round(borderAlphaByType[type])}%`,
-    glassStartAlpha: cssPercent(72 - transparentAmount * 36),
-    glassMiddleAlpha: cssPercent(46 - transparentAmount * 26),
-    glassEndAlpha: cssPercent(34 - transparentAmount * 22),
-    glassHighlightMix: cssPercent(8 + extraBlurAmount * 22),
-    glassDarkHighlightMix: cssPercent(5 + extraBlurAmount * 14),
-    glassBorderWhiteMix: cssPercent(28 + extraBlurAmount * 42),
-    glassDarkBorderWhiteMix: cssPercent(14 + extraBlurAmount * 24),
-    glassOutlineAlpha: cssAlpha(0.14 + extraBlurAmount * 0.28),
-    glassDarkOutlineAlpha: cssAlpha(0.08 + extraBlurAmount * 0.18),
-    glassShadowAlpha: cssAlpha(0.08 + extraBlurAmount * 0.2),
-    glassSecondaryShadowAlpha: cssAlpha(0.05 + extraBlurAmount * 0.12),
-    glassDarkShadowAlpha: cssAlpha(0.24 + extraBlurAmount * 0.28),
-    glassDarkSecondaryShadowAlpha: cssAlpha(0.16 + extraBlurAmount * 0.18),
-    glassInnerHighlightAlpha: cssAlpha(0.18 + extraBlurAmount * 0.42),
-    glassDarkInnerHighlightAlpha: cssAlpha(0.1 + extraBlurAmount * 0.2),
-    glassInnerLowlightAlpha: cssAlpha(0.06 + extraBlurAmount * 0.12),
-    glassDarkInnerLowlightAlpha: cssAlpha(0.04 + extraBlurAmount * 0.08),
-  };
 }
 
 function readDottedValue(input: Record<string, unknown>, dottedKey: string): unknown {
@@ -445,6 +303,42 @@ function stableStringify(value: unknown): string {
   return JSON.stringify(value);
 }
 
+function cssString(value: string): string {
+  return value
+    .replace(/\\/g, "\\\\")
+    .replace(/"/g, '\\"')
+    .replace(/\n/g, "\\A ")
+    .replace(/\r/g, "\\D ")
+    .replace(/\f/g, "\\C ");
+}
+
+function getBackgroundBlurPresentation(
+  type: BackgroundBlurType,
+  intensity: number,
+  enabled: boolean
+) {
+  if (!enabled || intensity <= 0) {
+    return {
+      filter: "none",
+      bleed: "0px",
+    };
+  }
+
+  const normalized = clampThemeIntensity(intensity);
+  const amount = normalized / 100;
+  const blur = (multiplier: number) => Number((normalized * multiplier).toFixed(1));
+
+  const filterByType: Record<BackgroundBlurType, string> = {
+    soft: `blur(${blur(0.1)}px) saturate(${(1 + amount * 0.04).toFixed(2)})`,
+    glass: `blur(${blur(0.42)}px) saturate(${(1 + amount * 1.1).toFixed(2)}) brightness(${(1 + amount * 0.12).toFixed(2)}) contrast(${(1 - amount * 0.1).toFixed(2)})`,
+  };
+
+  return {
+    filter: filterByType[type],
+    bleed: `${Math.ceil(normalized * 0.28)}px`,
+  };
+}
+
 function getManagedSettingsSignature(input: Record<string, unknown>): string {
   return stableStringify(input);
 }
@@ -452,7 +346,7 @@ function getManagedSettingsSignature(input: Record<string, unknown>): string {
 function normalizeThemeConfig(config: Partial<ThemeConfig> | null | undefined): ThemeConfig {
   return {
     ...DEFAULT_THEME_CONFIG,
-    ...config,
+    ...normalizeThemeConfigOverrides(config),
   };
 }
 
@@ -462,84 +356,40 @@ function normalizeThemeConfigOverrides(input: unknown): Partial<ThemeConfig> {
   }
 
   const result: Partial<ThemeConfig> = {};
-  const colorTheme = pickEnum(input.colorTheme, COLOR_THEMES);
-  const cardLayout = pickEnum(input.cardLayout, CARD_LAYOUTS);
-  const cardDesign = pickEnum(input.cardDesign, CARD_DESIGNS);
-  const statusDesign = pickEnum(input.statusDesign, STATUS_DESIGNS);
-  const graphDesign = pickEnum(input.graphDesign, GRAPH_DESIGNS);
-  const backgroundImageUrl = pickString(input.backgroundImageUrl);
-  const backgroundBlurEnabled = pickBoolean(input.backgroundBlurEnabled);
-  const backgroundBlurType = pickBlurType(input.backgroundBlurType);
-  const backgroundBlurIntensity = pickNumber(input.backgroundBlurIntensity);
-  const cardBlurEnabled = pickBoolean(input.cardBlurEnabled);
-  const cardBlurType = pickBlurType(input.cardBlurType);
-  const cardBlurIntensity = pickNumber(input.cardBlurIntensity);
-  const cardExtraBlurIntensity = pickNumber(input.cardExtraBlurIntensity);
+  const backgroundImageUrl = pickString(readDottedValue(input, "backgroundImageUrl"));
+  const backgroundBlurEnabled = pickBoolean(readDottedValue(input, "backgroundBlurEnabled"));
+  const backgroundBlurType = pickBlurType(readDottedValue(input, "backgroundBlurType"));
+  const backgroundBlurIntensity = pickNumber(readDottedValue(input, "backgroundBlurIntensity"));
 
-  if (colorTheme) result.colorTheme = colorTheme;
-  if (cardLayout) result.cardLayout = cardLayout;
-  if (cardDesign) result.cardDesign = cardDesign;
-  if (statusDesign) result.statusDesign = statusDesign;
-  if (graphDesign) result.graphDesign = graphDesign;
-  if (backgroundImageUrl !== undefined) result.backgroundImageUrl = backgroundImageUrl;
-  if (backgroundBlurEnabled !== undefined) result.backgroundBlurEnabled = backgroundBlurEnabled;
-  if (backgroundBlurType) result.backgroundBlurType = backgroundBlurType;
+  if (backgroundImageUrl !== undefined) {
+    result.backgroundImageUrl = backgroundImageUrl;
+  }
+  if (backgroundBlurEnabled !== undefined) {
+    result.backgroundBlurEnabled = backgroundBlurEnabled;
+  }
+  if (backgroundBlurType) {
+    result.backgroundBlurType = backgroundBlurType;
+  }
   if (backgroundBlurIntensity !== undefined) {
-    result.backgroundBlurIntensity = clampBackgroundBlurIntensity(backgroundBlurIntensity);
-  }
-  if (cardBlurEnabled !== undefined) result.cardBlurEnabled = cardBlurEnabled;
-  if (cardBlurType) result.cardBlurType = cardBlurType;
-  if (cardBlurIntensity !== undefined) {
-    result.cardBlurIntensity = clampBackgroundBlurIntensity(cardBlurIntensity);
-  }
-  if (cardExtraBlurIntensity !== undefined) {
-    result.cardExtraBlurIntensity = clampBackgroundBlurIntensity(cardExtraBlurIntensity);
+    result.backgroundBlurIntensity = clampThemeIntensity(backgroundBlurIntensity);
   }
 
   return result;
 }
 
 function normalizeStatusCardsVisibilityOverrides(input: unknown): Partial<StatusCardsVisibility> {
-  if (!isRecord(input)) {
-    return {};
-  }
-
-  const result: Partial<StatusCardsVisibility> = {};
-  (Object.keys(DEFAULT_STATUS_CARDS_VISIBILITY) as Array<keyof StatusCardsVisibility>).forEach((key) => {
-    const value = pickBoolean(input[key]);
-    if (value !== undefined) {
-      result[key] = value;
-    }
-  });
-
-  return result;
+  void input;
+  return {};
 }
 
 function normalizeManagedThemeSettings(input: unknown): ManagedThemeSettings {
   const source = parseThemeSettings(input);
   const result: ManagedThemeSettings = normalizeThemeConfigOverrides(source);
   const nodeViewMode = pickEnum(readDottedValue(source, "nodeViewMode"), NODE_VIEW_MODES);
-  const appearance = pickAppearance(readDottedValue(source, "appearance"));
   const language = pickManagedLanguage(readDottedValue(source, "language"));
-  const statusCardsVisibility: Partial<StatusCardsVisibility> = {};
-
-  (Object.keys(DEFAULT_STATUS_CARDS_VISIBILITY) as Array<keyof StatusCardsVisibility>).forEach((key) => {
-    const value = pickBoolean(readDottedValue(source, `statusCardsVisibility.${key}`));
-    if (value !== undefined) {
-      statusCardsVisibility[key] = value;
-    }
-  });
-
-  if (Object.keys(statusCardsVisibility).length > 0) {
-    result.statusCardsVisibility = statusCardsVisibility;
-  }
 
   if (nodeViewMode) {
     result.nodeViewMode = nodeViewMode;
-  }
-
-  if (appearance) {
-    result.appearance = appearance;
   }
 
   if (language) {
@@ -705,24 +555,14 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     [localThemeOverrides, managedThemeSettings]
   );
 
-  const statusCardsVisibility = useMemo<StatusCardsVisibility>(
-    () => ({
-      ...DEFAULT_STATUS_CARDS_VISIBILITY,
-      ...(managedThemeSettings.statusCardsVisibility || {}),
-      ...localStatusCardsOverrides,
-    }),
-    [localStatusCardsOverrides, managedThemeSettings.statusCardsVisibility]
-  );
+  const statusCardsVisibility = DEFAULT_STATUS_CARDS_VISIBILITY;
 
   const nodeViewMode =
     localNodeViewOverride ||
     managedThemeSettings.nodeViewMode ||
     DEFAULT_NODE_VIEW_MODE;
 
-  const appearance =
-    localAppearanceOverride ||
-    managedThemeSettings.appearance ||
-    DEFAULT_APPEARANCE;
+  const appearance = DEFAULT_APPEARANCE;
 
   const language = useMemo(
     () =>
@@ -1025,18 +865,17 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       return;
     }
 
+    const backgroundImageUrl = themeConfig.backgroundImageUrl?.trim();
     document.body.style.backgroundImage = "";
     document.body.style.backgroundSize = "";
     document.body.style.backgroundPosition = "";
     document.body.style.backgroundAttachment = "";
 
-    if (!themeConfig.backgroundImageUrl) {
+    if (!backgroundImageUrl) {
       delete document.body.dataset.customBackground;
       document.body.style.removeProperty("--komari-custom-background-image");
       document.body.style.removeProperty("--komari-custom-background-filter");
-      document.body.style.removeProperty("--komari-custom-background-inset");
       document.body.style.removeProperty("--komari-custom-background-bleed");
-      document.body.style.removeProperty("--komari-custom-background-scale");
       return;
     }
 
@@ -1049,12 +888,10 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     document.body.dataset.customBackground = "true";
     document.body.style.setProperty(
       "--komari-custom-background-image",
-      `url("${cssString(themeConfig.backgroundImageUrl)}")`
+      `url("${cssString(backgroundImageUrl)}")`
     );
     document.body.style.setProperty("--komari-custom-background-filter", filter);
     document.body.style.setProperty("--komari-custom-background-bleed", bleed);
-    document.body.style.removeProperty("--komari-custom-background-inset");
-    document.body.style.removeProperty("--komari-custom-background-scale");
   }, [
     themeConfig.backgroundBlurEnabled,
     themeConfig.backgroundBlurIntensity,
@@ -1067,36 +904,9 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       return;
     }
 
-    if (!themeConfig.cardBlurEnabled) {
-      delete document.body.dataset.cardBlur;
-      delete document.body.dataset.cardBlurType;
-      Object.values(CARD_BLUR_STYLE_PROPERTIES).forEach((property) => {
-        document.body.style.removeProperty(property);
-      });
-      return;
-    }
-
-    const presentation = getCardBlurPresentation(
-      themeConfig.cardBlurType,
-      themeConfig.cardBlurIntensity,
-      themeConfig.cardExtraBlurIntensity,
-      themeConfig.cardBlurEnabled
-    );
-
-    document.body.dataset.cardBlur = "true";
-    document.body.dataset.cardBlurType = themeConfig.cardBlurType;
-    Object.entries(CARD_BLUR_STYLE_PROPERTIES).forEach(([key, property]) => {
-      document.body.style.setProperty(
-        property,
-        presentation[key as keyof typeof presentation]
-      );
-    });
-  }, [
-    themeConfig.cardBlurEnabled,
-    themeConfig.cardBlurIntensity,
-    themeConfig.cardExtraBlurIntensity,
-    themeConfig.cardBlurType,
-  ]);
+    delete document.body.dataset.cardBlur;
+    delete document.body.dataset.cardBlurType;
+  }, []);
 
   const setColorTheme = useCallback(
     (theme: ColorTheme) => setLocalThemePatch({ colorTheme: theme }),
@@ -1132,7 +942,7 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   );
   const setBackgroundBlurIntensity = useCallback(
     (intensity: number) =>
-      setLocalThemePatch({ backgroundBlurIntensity: clampBackgroundBlurIntensity(intensity) }),
+      setLocalThemePatch({ backgroundBlurIntensity: clampThemeIntensity(intensity) }),
     [setLocalThemePatch]
   );
   const setCardBlurEnabled = useCallback(
@@ -1145,13 +955,13 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   );
   const setCardTransparentIntensity = useCallback(
     (intensity: number) =>
-      setLocalThemePatch({ cardBlurIntensity: clampBackgroundBlurIntensity(intensity) }),
+      setLocalThemePatch({ cardBlurIntensity: clampThemeIntensity(intensity) }),
     [setLocalThemePatch]
   );
   const setCardBlurIntensity = setCardTransparentIntensity;
   const setCardExtraBlurIntensity = useCallback(
     (intensity: number) =>
-      setLocalThemePatch({ cardExtraBlurIntensity: clampBackgroundBlurIntensity(intensity) }),
+      setLocalThemePatch({ cardExtraBlurIntensity: clampThemeIntensity(intensity) }),
     [setLocalThemePatch]
   );
   const setStatusCardVisibility = useCallback(

@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import { useTheme } from "@/contexts/ThemeContext";
 import { cn } from "@/lib/utils";
 
 interface CircleChartProps {
@@ -21,8 +20,6 @@ export default function CircleChart({
   compact = false,
   size,
 }: CircleChartProps) {
-  const { themeConfig } = useTheme();
-
   const chartValue = Math.min(Math.max(value, 0), 100);
   const chartSize = size ?? (compact ? 58 : 80);
 
@@ -32,23 +29,10 @@ export default function CircleChart({
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - (chartValue / 100) * circumference;
 
-  // Match komari-next's original value-tiered theme color mapping.
+  // Midnight compact theme value-tiered color mapping.
   const getThemeColor = () => {
     if (color) return color;
-    switch (themeConfig.colorTheme) {
-      case "ocean":
-        return chartValue >= 80 ? "#0284c7" : chartValue >= 60 ? "#06b6d4" : "#22d3ee";
-      case "sunset":
-        return chartValue >= 80 ? "#ec4899" : chartValue >= 60 ? "#f97316" : "#fb923c";
-      case "forest":
-        return chartValue >= 80 ? "#059669" : chartValue >= 60 ? "#10b981" : "#4ade80";
-      case "midnight":
-        return chartValue >= 80 ? "#7c3aed" : chartValue >= 60 ? "#6366f1" : "#818cf8";
-      case "rose":
-        return chartValue >= 80 ? "#e11d48" : chartValue >= 60 ? "#ec4899" : "#f472b6";
-      default:
-        return chartValue >= 80 ? "#9333ea" : chartValue >= 60 ? "#3b82f6" : "#60a5fa";
-    }
+    return chartValue >= 80 ? "#7c3aed" : chartValue >= 60 ? "#6366f1" : "#818cf8";
   };
 
   const fillColor = getThemeColor();
