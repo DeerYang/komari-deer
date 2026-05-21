@@ -1,15 +1,17 @@
 "use client";
 
 import React from "react";
-import { cn } from "@/lib/utils";
+import { RadialBarChart, RadialBar, PolarAngleAxis, ResponsiveContainer } from "recharts";
+import { useTheme } from "@/contexts/ThemeContext";
 
 interface CircleChartProps {
   value: number; // 0-100
   label: string;
   subLabel?: string;
   color?: string; // Optional override
-  compact?: boolean; // Compact mode
-  size?: number; // Custom pixel size
+  compact?: boolean; // Compact mode for table views
+  size?: number; // Optional custom pixel size
+  visualSize?: number; // Optional visual-only ring size for compact charts
 }
 
 export default function CircleChart({
@@ -19,92 +21,149 @@ export default function CircleChart({
   color,
   compact = false,
   size,
+  visualSize,
 }: CircleChartProps) {
+  const { themeConfig } = useTheme();
+
+  // Clamp value
   const chartValue = Math.min(Math.max(value, 0), 100);
-  const chartSize = size ?? (compact ? 58 : 80);
 
-  // Outer ring parameters
-  const radius = compact ? 18.5 : 20;
-  const strokeWidth = compact ? 4.4 : 3;
-  const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference - (chartValue / 100) * circumference;
-
-  // Midnight compact theme value-tiered color mapping.
+  // Get theme color based on selected color theme and value
   const getThemeColor = () => {
-    if (color) return color;
-    return chartValue >= 80 ? "#7c3aed" : chartValue >= 60 ? "#6366f1" : "#818cf8";
+    if (color) return color; // Use override if provided
+
+    const getColorForTheme = () => {
+      switch (themeConfig.colorTheme) {
+        case 'ocean':
+          return chartValue >= 80 ? '#0284c7' : chartValue >= 60 ? '#06b6d4' : '#22d3ee';
+        case 'sunset':
+          return chartValue >= 80 ? '#ec4899' : chartValue >= 60 ? '#f97316' : '#fb923c';
+        case 'forest':
+          return chartValue >= 80 ? '#059669' : chartValue >= 60 ? '#10b981' : '#4ade80';
+        case 'midnight':
+          return chartValue >= 80 ? '#7c3aed' : chartValue >= 60 ? '#6366f1' : '#818cf8';
+        case 'rose':
+          return chartValue >= 80 ? '#e11d48' : chartValue >= 60 ? '#ec4899' : '#f472b6';
+        default: // 'default'
+          return chartValue >= 80 ? '#9333ea' : chartValue >= 60 ? '#3b82f6' : '#60a5fa';
+      }
+    };
+
+    return getColorForTheme();
   };
 
   const fillColor = getThemeColor();
 
-  return (
-    <div className="flex flex-col items-center justify-center select-none">
-      {/* SVG Circular Ring */}
-      <div className="relative" style={{ width: chartSize, height: chartSize }}>
-        <svg
-          width={chartSize}
-          height={chartSize}
-          viewBox="0 0 50 50"
-          className="transform -rotate-90 w-full h-full"
-        >
-          {/* Background circle path */}
-          <circle
-            cx="25"
-            cy="25"
-            r={radius}
-            stroke="rgba(128, 128, 128, 0.1)"
-            strokeWidth={strokeWidth}
-            fill="transparent"
-          />
+  const data = [
+    {
+      name: label,
+      value: chartValue,
+      fill: fillColor,
+    },
+  ];
 
-          {/* Active progress circle path */}
-          <circle
-            cx="25"
-            cy="25"
-            r={radius}
-            stroke={fillColor}
-            strokeWidth={strokeWidth}
-            fill="transparent"
-            strokeDasharray={circumference}
-            strokeDashoffset={strokeDashoffset}
-            strokeLinecap="round"
-            className="transition-all duration-500 ease-out"
-          />
-        </svg>
+  // Compact mode for table views
+  if (compact) {
+    const compactSize = size ?? 40;
+    const compactVisualSize = visualSize ?? compactSize;
+    const compactBarSize = visualSize ? 5 : 7;
 
-        {/* Center Percentage Display */}
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <span
-            className="font-extrabold leading-none tracking-tight"
+    return (
+      <div className="flex items-center justify-center">
+        <div className="relative overflow-visible" style={{ height: compactSize, width: compactSize }}>
+          <div
+            className="absolute left-1/2 top-1/2"
             style={{
-              fontSize: compact ? "16px" : "15px",
-              color: compact ? "#f4f6ff" : undefined,
+              height: compactVisualSize,
+              width: compactVisualSize,
+              transform: "translate(-50%, -50%)",
             }}
           >
+            <ResponsiveContainer width="100%" height="100%">
+              <RadialBarChart
+                cx="50%"
+                cy="50%"
+                innerRadius="65%"
+                outerRadius="95%"
+                barSize={compactBarSize}
+                data={data}
+                startAngle={90}
+                endAngle={-270}
+              >
+                <PolarAngleAxis
+                  type="number"
+                  domain={[0, 100]}
+                  angleAxisId={0}
+                  tick={false}
+                />
+                <RadialBar
+                  background={{ fill: 'rgba(128, 128, 128, 0.1)' }}
+                  dataKey="value"
+                  cornerRadius={10}
+                  animationDuration={800}
+                  animationEasing="ease-out"
+                />
+              </RadialBarChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Centered Percentage for compact mode */}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <span className="text-[11px] font-bold text-foreground">
+              {Math.round(chartValue)}%
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Default mode with labels
+  const chartSize = size ?? 90;
+
+  return (
+    <div className="flex flex-col items-center justify-center p-2">
+      <div className="relative" style={{ height: chartSize, width: chartSize }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <RadialBarChart
+            cx="50%"
+            cy="50%"
+            innerRadius="70%"
+            outerRadius="95%"
+            barSize={8}
+            data={data}
+            startAngle={90}
+            endAngle={-270}
+          >
+            <PolarAngleAxis
+              type="number"
+              domain={[0, 100]}
+              angleAxisId={0}
+              tick={false}
+            />
+            <RadialBar
+              background={{ fill: 'rgba(128, 128, 128, 0.1)' }}
+              dataKey="value"
+              cornerRadius={10}
+              animationDuration={800}
+              animationEasing="ease-out"
+            />
+          </RadialBarChart>
+        </ResponsiveContainer>
+
+        {/* Centered Percentage */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <span className="text-base font-bold text-foreground drop-shadow-sm tracking-tight">
             {Math.round(chartValue)}%
           </span>
         </div>
       </div>
 
-      {/* Label under the circle */}
-      <div className="text-center mt-1">
-        <span
-          className={cn(
-            "font-semibold block tracking-tight",
-            compact ? "text-[#aeb6c9] text-[12px] mt-1.5" : "text-slate-400 text-xs mt-1"
-          )}
-        >
-          {label}
-        </span>
+      {/* Labels */}
+      <div className="text-center mt-2">
+        <div className="text-xs font-semibold text-foreground/90">{label}</div>
         {subLabel && (
-          <span
-            className={cn(
-              "block mt-0.5",
-              compact ? "text-[11px] text-[#626b7e]" : "text-[10px] text-muted-foreground/60"
-            )}
-          >
-            {subLabel}
-          </span>
+          <div className="text-[10px] text-muted-foreground/60 mt-0.5">{subLabel}</div>
         )}
       </div>
     </div>

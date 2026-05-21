@@ -365,6 +365,7 @@ const NodeTable: React.FC<NodeTableProps> = ({ nodes, liveData }) => {
                         value={nodeData.cpu.usage}
                         label={t("nodeCard.cpu")}
                         compact={true}
+                        visualSize={58}
                       />
                     </div>
                   </TableCell>
@@ -376,6 +377,7 @@ const NodeTable: React.FC<NodeTableProps> = ({ nodes, liveData }) => {
                         label={t("nodeCard.ram")}
                         subLabel={`${formatBytes(nodeData.ram.used)} / ${formatBytes(node.mem_total)}`}
                         compact={true}
+                        visualSize={58}
                       />
                     </div>
                   </TableCell>
@@ -387,6 +389,7 @@ const NodeTable: React.FC<NodeTableProps> = ({ nodes, liveData }) => {
                         label={t("nodeCard.disk")}
                         subLabel={`${formatBytes(nodeData.disk.used)} / ${formatBytes(node.disk_total)}`}
                         compact={true}
+                        visualSize={58}
                       />
                     </div>
                   </TableCell>
