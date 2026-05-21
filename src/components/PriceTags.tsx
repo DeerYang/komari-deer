@@ -45,7 +45,7 @@ const PriceTags = ({
   ip4 = "",
   ip6 = "",
   compact = false,
-  maxCustomTags = compact ? 1 : undefined,
+  maxCustomTags = compact ? 3 : undefined,
   className,
   gap = "1",
   wrap = "wrap",
@@ -75,93 +75,43 @@ const PriceTags = ({
     compact && "min-w-0 max-w-full content-center gap-y-1",
     className
   );
-
-  if (price == 0 && !compact) {
-    return (
-      <Flex {...props} gap={gap} wrap={wrap} className={containerClassName}>
-        <CustomTags tags={tags} compact={compact} maxVisible={maxCustomTags} />
-      </Flex>
-    );
-  }
-
-  if (compact) {
+  const priceBadgeStyle = {
+    color: "#858bff",
+    backgroundColor: "rgba(95, 94, 255, 0.18)",
+    borderColor: "rgba(110, 112, 255, 0.42)",
+  };
+  const expiredBadgeStyle = (() => {
     const expiredDate = new Date(expired_at);
     const now = new Date();
     const diffTime = expiredDate.getTime() - now.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    let daysColorClass = "bg-[#00be5f]/14 border-[#00be5f]/28 text-[#00c96b]";
-    if (diffDays <= 0) {
-      daysColorClass = "bg-[#ff4d7d]/14 border-[#ff4d7d]/28 text-[#ff4d7d]";
-    } else if (diffDays <= 7) {
-      daysColorClass = "bg-[#ff4d7d]/14 border-[#ff4d7d]/28 text-[#ff4d7d]";
+
+    if (diffDays <= 0 || diffDays <= 7) {
+      return {
+        color: "#ff5d88",
+        backgroundColor: "rgba(255, 77, 125, 0.18)",
+        borderColor: "rgba(255, 77, 125, 0.42)",
+      };
     } else if (diffDays <= 15) {
-      daysColorClass = "bg-[#ffb02e]/14 border-[#ffb02e]/28 text-[#ffb02e]";
+      return {
+        color: "#ffba3d",
+        backgroundColor: "rgba(255, 176, 46, 0.18)",
+        borderColor: "rgba(255, 176, 46, 0.42)",
+      };
+    } else {
+      return {
+        color: "#16d978",
+        backgroundColor: "rgba(0, 190, 95, 0.18)",
+        borderColor: "rgba(0, 190, 95, 0.42)",
+      };
     }
+  })();
 
-    const hasBilling = price !== 0;
-    const priceText = price == -1 ? "Free" : `${currency}${price}`;
-    const cycleText = (() => {
-      if (billing_cycle >= 27 && billing_cycle <= 32) {
-        return "Monthly";
-      } else if (billing_cycle >= 87 && billing_cycle <= 95) {
-        return "Quarterly";
-      } else if (billing_cycle >= 175 && billing_cycle <= 185) {
-        return "Semiannual";
-      } else if (billing_cycle >= 360 && billing_cycle <= 370) {
-        return "Annual";
-      } else if (billing_cycle >= 720 && billing_cycle <= 750) {
-        return "Biennial";
-      } else if (billing_cycle >= 1080 && billing_cycle <= 1150) {
-        return "Triennial";
-      } else if (billing_cycle >= 1800 && billing_cycle <= 1850) {
-        return "Quinquennial";
-      } else if (billing_cycle == -1) {
-        return "Once";
-      } else {
-        return `${billing_cycle} day`;
-      }
-    })();
-
-    const daysText = (() => {
-      if (diffDays <= 0) {
-        return t("common.expired");
-      } else if (diffDays > 36500) {
-        return t("common.long_term");
-      } else {
-        return `${diffDays} day`;
-      }
-    })();
-
+  if (price == 0) {
     return (
-      <div className={cn("flex items-center justify-between w-full gap-1.5 flex-nowrap overflow-hidden select-none", className)}>
-        {/* Left: V4 / V6 & Custom Tags */}
-        <div className="flex items-center gap-1.5 min-w-0 flex-1 overflow-hidden">
-          {ip4 && (
-            <span className="inline-flex items-center h-[22px] px-2 rounded-full bg-white/[0.03] border border-[#a0aad2]/18 text-[#f2f4ff] text-[12px] font-bold shrink-0">
-              <span className="w-[5px] h-[5px] rounded-full bg-[#00df72] mr-1" />
-              V4
-            </span>
-          )}
-          {ip6 && (
-            <span className="inline-flex items-center h-[22px] px-2 rounded-full bg-white/[0.03] border border-[#a0aad2]/18 text-[#f2f4ff] text-[12px] font-bold shrink-0">
-              <span className="w-[5px] h-[5px] rounded-full bg-[#00df72] mr-1" />
-              V6
-            </span>
-          )}
-        </div>
-
-        {/* Right: Price & Remaining days */}
-        {hasBilling && (
-          <div className="flex items-center gap-1.5 shrink-0">
-            <span className="inline-flex items-center h-[22px] max-w-[7.5rem] px-2 rounded-full bg-[#5f5eff]/16 border border-[#6e70ff]/35 text-[#737cff] text-[12px] font-bold truncate">
-              {priceText}/{cycleText}
-            </span>
-            <span className={cn("inline-flex items-center h-[22px] px-2 rounded-full text-[12px] font-bold border whitespace-nowrap", daysColorClass)}>
-              {daysText}
-            </span>
-          </div>
-        )}
-      </div>
+      <Flex {...props} gap={gap} wrap={wrap} className={containerClassName}>
+        <CustomTags tags={tags} compact={compact} maxVisible={maxCustomTags} />
+      </Flex>
     );
   }
 
@@ -195,7 +145,12 @@ const PriceTags = ({
         </Badge>
       )}
 
-      <Badge color="iris" variant="outline" className={badgeClassName}>
+      <Badge
+        color="iris"
+        variant="outline"
+        className={badgeClassName}
+        style={priceBadgeStyle}
+      >
         <label className={labelClassName}>
           {price == -1 ? t("common.free") : `${currency}${price}`}/
           {(() => {
@@ -238,6 +193,7 @@ const PriceTags = ({
         })()}
         variant="outline"
         className={badgeClassName}
+        style={expiredBadgeStyle}
       >
         <label className={labelClassName}>
           {(() => {
@@ -316,14 +272,14 @@ const CustomTags = ({
             className={cn(
               "text-sm",
               compact &&
-                "h-[22px] min-w-0 max-w-[5rem] px-2 rounded-full text-[12px] font-bold border border-[#a0aad2]/18 bg-white/[0.03] text-[#f2f4ff] hover:bg-white/[0.05] shrink-0"
+                "h-5 min-w-0 max-w-[4.75rem] shrink px-1.5 py-0 text-[10px] leading-none"
             )}
             title={text}
           >
             <label
               className={cn(
                 "text-xs",
-                compact && "block min-w-0 truncate text-[12px] font-bold"
+                compact && "block min-w-0 truncate text-[10px] leading-none"
               )}
             >
               {text}
@@ -331,17 +287,13 @@ const CustomTags = ({
           </Badge>
         );
       })}
-      {hiddenCount > 0 && !compact && (
+      {hiddenCount > 0 && (
         <Badge
           variant="outline"
-          className={cn(
-            "h-5 shrink-0 border-muted-foreground/25 bg-muted/50 px-1.5 py-0 text-[10px] leading-none text-muted-foreground",
-            compact &&
-              "h-[22px] px-2 rounded-full border border-[#a0aad2]/18 bg-white/[0.03] text-[#f2f4ff] hover:bg-white/[0.05] text-[12px] font-bold shrink-0"
-          )}
+          className="h-5 shrink-0 border-muted-foreground/25 bg-muted/50 px-1.5 py-0 text-[10px] leading-none text-muted-foreground"
           title={hiddenTitle}
         >
-          <label className={cn("text-[10px] leading-none", compact && "text-[12px] font-bold leading-none")}>+{hiddenCount}</label>
+          <label className="text-[10px] leading-none">+{hiddenCount}</label>
         </Badge>
       )}
     </>

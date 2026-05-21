@@ -54,6 +54,70 @@ export default function CircleChart({
 
   const fillColor = getThemeColor();
 
+  if (compact && visualSize == null) {
+    const chartSize = size ?? 58;
+    const radius = 18.5;
+    const strokeWidth = 4.4;
+    const circumference = 2 * Math.PI * radius;
+    const strokeDashoffset = circumference - (chartValue / 100) * circumference;
+    const compactFillColor =
+      color ?? (chartValue >= 80 ? "#7c3aed" : chartValue >= 60 ? "#6366f1" : "#818cf8");
+
+    return (
+      <div className="flex flex-col items-center justify-center select-none">
+        <div className="relative" style={{ width: chartSize, height: chartSize }}>
+          <svg
+            width={chartSize}
+            height={chartSize}
+            viewBox="0 0 50 50"
+            className="h-full w-full -rotate-90 transform"
+          >
+            <circle
+              cx="25"
+              cy="25"
+              r={radius}
+              stroke="rgba(128, 128, 128, 0.1)"
+              strokeWidth={strokeWidth}
+              fill="transparent"
+            />
+            <circle
+              cx="25"
+              cy="25"
+              r={radius}
+              stroke={compactFillColor}
+              strokeWidth={strokeWidth}
+              fill="transparent"
+              strokeDasharray={circumference}
+              strokeDashoffset={strokeDashoffset}
+              strokeLinecap="round"
+              className="transition-all duration-500 ease-out"
+            />
+          </svg>
+
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+            <span
+              className="font-extrabold leading-none tracking-tight"
+              style={{ fontSize: "16px", color: "#f4f6ff" }}
+            >
+              {Math.round(chartValue)}%
+            </span>
+          </div>
+        </div>
+
+        <div className="mt-1 text-center">
+          <span className="mt-1.5 block text-[12px] font-semibold tracking-tight text-[#aeb6c9]">
+            {label}
+          </span>
+          {subLabel && (
+            <span className="mt-0.5 block text-[11px] text-[#626b7e]">
+              {subLabel}
+            </span>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   const data = [
     {
       name: label,
