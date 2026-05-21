@@ -482,10 +482,10 @@ const Node = ({ basic, live, online }: NodeProps) => {
     return (
       <div
         id={basic.uuid}
-        className={`group relative flex min-h-[404px] w-full overflow-hidden rounded-[14px] border p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_12px_32px_rgba(0,0,0,0.34)] transition-all duration-300 ${
+        className={`group relative flex min-h-[404px] w-full overflow-hidden rounded-[14px] border p-4 transition-all duration-300 ${
           !online
-            ? 'border-red-500/30 bg-[linear-gradient(180deg,rgba(17,22,34,0.98),rgba(12,16,28,0.99))] grayscale-[0.4] brightness-75 hover:grayscale-0 hover:brightness-100 hover:border-red-500/50 hover:shadow-[0_0_24px_rgba(239,68,68,0.15),inset_0_1px_0_rgba(255,255,255,0.04),0_12px_32px_rgba(0,0,0,0.34)]'
-            : 'border-[#273044] bg-[linear-gradient(180deg,rgba(17,22,34,0.98),rgba(12,16,28,0.99))] hover:border-[#5e6dff]/45'
+            ? 'border-red-500/30 bg-[linear-gradient(135deg,rgba(20,26,42,0.95)_0%,rgba(14,19,32,0.98)_50%,rgba(10,14,26,0.99)_100%)] grayscale-[0.4] brightness-75 hover:grayscale-0 hover:brightness-100 hover:border-red-500/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_8px_24px_rgba(0,0,0,0.4),0_2px_8px_rgba(239,68,68,0.08)] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_12px_40px_rgba(239,68,68,0.15),0_4px_16px_rgba(239,68,68,0.12)] hover:translate-y-[-2px]'
+            : 'border-[#3a4a66]/60 bg-[linear-gradient(135deg,rgba(20,26,42,0.95)_0%,rgba(14,19,32,0.98)_50%,rgba(10,14,26,0.99)_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_8px_24px_rgba(0,0,0,0.4),0_2px_8px_rgba(94,109,255,0.08)] hover:border-[#5e6dff]/70 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_12px_40px_rgba(94,109,255,0.15),0_4px_16px_rgba(94,109,255,0.12)] hover:translate-y-[-2px]'
         }`}
       >
         {/* Offline overlay with red dot and text */}
@@ -532,7 +532,7 @@ const Node = ({ basic, live, online }: NodeProps) => {
                 <div className="flex flex-row min-w-0 items-center gap-1.5">
                   <Link
                     href={`/instance/${basic.uuid}`}
-                    className="group-hover:text-primary transition-colors overflow-hidden flex-1 min-w-0"
+                    className="group-hover:text-primary transition-all duration-200 overflow-hidden flex-1 min-w-0 hover:drop-shadow-[0_0_8px_rgba(94,109,255,0.6)]"
                   >
                     <h3 className="font-bold truncate tracking-tight text-base">
                       {basic.name}
@@ -546,7 +546,7 @@ const Node = ({ basic, live, online }: NodeProps) => {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-6 w-6 text-muted-foreground hover:text-primary flex-shrink-0"
+                        className="h-6 w-6 text-muted-foreground hover:text-primary hover:bg-primary/10 flex-shrink-0 transition-all duration-200"
                       >
                         <TrendingUp className="h-3.5 w-3.5" />
                       </Button>
@@ -554,26 +554,26 @@ const Node = ({ basic, live, online }: NodeProps) => {
                   />
                 </div>
                 <div className="flex items-center text-[11px] text-muted-foreground/80 gap-2 mt-0.5">
-                  <span className="flex items-center gap-1.5 bg-muted/50 px-1.5 py-0.5 rounded">
+                  <span className="flex items-center gap-1.5 bg-gradient-to-r from-[#1e2a3f]/60 to-[#1a2535]/60 border border-[#2a3a52]/40 px-2 py-1 rounded-md backdrop-blur-sm">
                     <img src={getOSImage(basic.os)} alt={basic.os} className="w-3 h-3 flex-shrink-0" />
-                    <span className="whitespace-nowrap">{getOSName(basic.os)}</span>
+                    <span className="whitespace-nowrap font-medium">{getOSName(basic.os)}</span>
                   </span>
                   <span
                     className={cn(
-                      "w-1.5 h-1.5 rounded-full flex-shrink-0",
+                      "w-1.5 h-1.5 rounded-full flex-shrink-0 shadow-[0_0_6px_currentColor] animate-pulse",
                       online ? "bg-green-500" : "bg-red-500"
                     )}
                     title={online ? t("nodeCard.online") : t("nodeCard.offline")}
                   />
                   <span className="flex-1" />
                   <span className="opacity-40">•</span>
-                  <span className="whitespace-nowrap font-mono">{formatUptimeCompact(liveData.uptime)}</span>
+                  <span className="whitespace-nowrap font-mono text-[#8a93a8]">{formatUptimeCompact(liveData.uptime)}</span>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="-mx-4 mt-3 h-px bg-[#273044]/80" />
+          <div className="-mx-4 mt-3 h-px bg-gradient-to-r from-transparent via-[#3a4a66]/40 to-transparent" />
           <div className="h-4" />
 
           {/* Resources Grid */}
@@ -605,21 +605,21 @@ const Node = ({ basic, live, online }: NodeProps) => {
 
           {/* Network speeds and traffic */}
           <div className="space-y-2.5 text-[13px] select-none">
-            <div className="flex min-w-0 items-center justify-between gap-4">
+            <div className="flex min-w-0 items-center justify-between gap-4 px-3 py-2 rounded-lg bg-gradient-to-r from-[#1a2332]/40 to-[#141b2a]/40 border border-[#2a3a52]/30">
               <span className="inline-flex items-center gap-2 font-semibold text-[#a6aec1]">
                 <Activity className="h-3.5 w-3.5 text-[#8a93a8]" />
                 Net
               </span>
               <div className="flex min-w-0 items-center gap-4 font-mono text-[12px] font-extrabold tabular-nums">
-                <span className="whitespace-nowrap text-[#00df7c]">
+                <span className="whitespace-nowrap text-[#00df7c] drop-shadow-[0_0_8px_rgba(0,223,124,0.4)]">
                   ↑ {uploadSpeed}/s
                 </span>
-                <span className="whitespace-nowrap text-[#5ca9ff]">
+                <span className="whitespace-nowrap text-[#5ca9ff] drop-shadow-[0_0_8px_rgba(92,169,255,0.4)]">
                   ↓ {downloadSpeed}/s
                 </span>
               </div>
             </div>
-            <div className="flex min-w-0 items-center justify-between gap-4">
+            <div className="flex min-w-0 items-center justify-between gap-4 px-3 py-2 rounded-lg bg-gradient-to-r from-[#1a2332]/30 to-[#141b2a]/30 border border-[#2a3a52]/20">
               <span className="inline-flex items-center gap-2 font-semibold text-[#a6aec1]">
                 <Activity className="h-3.5 w-3.5 text-[#8a93a8]" />
                 Traffic
