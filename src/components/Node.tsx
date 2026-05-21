@@ -484,15 +484,21 @@ const Node = ({ basic, live, online }: NodeProps) => {
         id={basic.uuid}
         className="group relative flex min-h-[404px] w-full overflow-hidden rounded-[14px] border border-[#273044] bg-[linear-gradient(180deg,rgba(17,22,34,0.98),rgba(12,16,28,0.99))] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_12px_32px_rgba(0,0,0,0.34)] transition-all duration-300 hover:border-[#5e6dff]/45"
       >
-        {/* Offline overlay - simple version */}
+        {/* Offline overlay with red dot and text */}
         {!online && (
-          <div className="absolute inset-0 z-10 bg-black/50 backdrop-blur-sm">
+          <div className="absolute inset-0 z-10 bg-black/60 backdrop-blur-sm flex items-center justify-center">
             <div
               className="absolute inset-0 opacity-10"
               style={{
                 backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 15px, rgba(255,255,255,0.05) 15px, rgba(255,255,255,0.05) 30px)'
               }}
             />
+            <div className="relative z-20 flex items-center gap-1.5 px-3 py-2 rounded-full bg-red-500/20 border border-red-500/40 backdrop-blur-md">
+              <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+              <span className="text-red-400 font-semibold text-sm tracking-wide">
+                {t("nodeCard.offline")}
+              </span>
+            </div>
           </div>
         )}
         <div className="relative flex min-h-0 w-full flex-col">
@@ -661,8 +667,26 @@ const Node = ({ basic, live, online }: NodeProps) => {
   return (
     <Card
       id={basic.uuid}
-      className={cardStyles[themeConfig.cardLayout] || cardStyles.classic}
+      className={cn(cardStyles[themeConfig.cardLayout] || cardStyles.classic, "relative")}
     >
+      {/* Offline overlay with red dot and text */}
+      {!online && (
+        <div className="absolute inset-0 z-10 bg-black/60 backdrop-blur-sm flex items-center justify-center rounded-lg">
+          <div
+            className="absolute inset-0 opacity-10 rounded-lg"
+            style={{
+              backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 15px, rgba(255,255,255,0.05) 15px, rgba(255,255,255,0.05) 30px)'
+            }}
+          />
+          <div className="relative z-20 flex items-center gap-1.5 px-3 py-2 rounded-full bg-red-500/20 border border-red-500/40 backdrop-blur-md">
+            <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+            <span className="text-red-400 font-semibold text-sm tracking-wide">
+              {t("nodeCard.offline")}
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Header: Identity & Status */}
       <CardHeader className={headerStyles[themeConfig.cardLayout] || headerStyles.classic}>
         {(themeConfig.cardLayout as string) === 'compact' ? (
