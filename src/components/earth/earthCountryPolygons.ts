@@ -190,6 +190,12 @@ function getCountryFeaturesById() {
   return featuresByIdCache;
 }
 
+function getCountryFeatureByNumericId(featuresById: Map<string, CountryFeature>, numericId?: string) {
+  if (!numericId) return undefined;
+
+  return featuresById.get(numericId) ?? featuresById.get(numericId.padStart(3, "0"));
+}
+
 function getRingArea(ring: Position[]) {
   let area = 0;
 
@@ -268,7 +274,7 @@ export function getEarthCountryPolygons(codes: string[]): EarthCountryPolygon[] 
 
   normalizedCodes.forEach((code) => {
     const numericId = ISO_NUMERIC_BY_CODE[code];
-    const country = numericId ? featuresById.get(numericId) : undefined;
+    const country = getCountryFeatureByNumericId(featuresById, numericId);
 
     if (country?.geometry) {
       polygons.push({
